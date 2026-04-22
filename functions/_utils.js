@@ -1,4 +1,3 @@
-
 export function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
     ...init,
@@ -65,7 +64,7 @@ export async function ensureSchema(DB) {
     )
   `).run();
 
-  const columns = await DB.prepare(\`PRAGMA table_info(artworks)\`).all();
+  const columns = await DB.prepare(`PRAGMA table_info(artworks)`).all();
   const names = new Set((columns?.results || []).map((col) => col.name));
 
   await ensureColumn(DB, names, "description", "ALTER TABLE artworks ADD COLUMN description TEXT DEFAULT ''");
@@ -86,20 +85,20 @@ export async function ensureSchema(DB) {
     WHERE created_at IS NULL OR updated_at IS NULL OR is_pinned IS NULL
   `).run();
 
-  await DB.prepare(\`
+  await DB.prepare(`
     CREATE INDEX IF NOT EXISTS idx_artworks_created_at
     ON artworks(created_at DESC)
-  \`).run();
+  `).run();
 
-  await DB.prepare(\`
+  await DB.prepare(`
     CREATE INDEX IF NOT EXISTS idx_artworks_public
     ON artworks(is_public)
-  \`).run();
+  `).run();
 
-  await DB.prepare(\`
+  await DB.prepare(`
     CREATE INDEX IF NOT EXISTS idx_artworks_pinned
     ON artworks(is_pinned)
-  \`).run();
+  `).run();
 }
 
 export async function ensureSiteProfileTable(DB) {
@@ -118,7 +117,7 @@ export async function ensureSiteProfileTable(DB) {
     )
   `).run();
 
-  const columns = await DB.prepare(\`PRAGMA table_info(site_profile)\`).all();
+  const columns = await DB.prepare(`PRAGMA table_info(site_profile)`).all();
   const names = new Set((columns?.results || []).map((col) => col.name));
 
   await ensureColumn(DB, names, "hero_title", "ALTER TABLE site_profile ADD COLUMN hero_title TEXT DEFAULT ''");
