@@ -1,8 +1,15 @@
 const appState = {
+  allItems: [],
+  filteredItems: [],
+  visibleItems: [],
   offset: 0,
   limit: 12,
-  loading: false,
-  hasMore: true,
+  rendering: false,
+  hasMoreFiltered: true,
+  observer: null,
+  selectedYear: '',
+  selectedCategories: new Set(),
+  keyword: '',
 };
 
 const appEls = {
@@ -18,6 +25,9 @@ const appEls = {
   worksEmpty: document.getElementById('worksEmpty'),
   worksLoading: document.getElementById('worksLoading'),
   sentinel: document.getElementById('scrollSentinel'),
+  keywordSearch: document.getElementById('keywordSearch'),
+  yearFilter: document.getElementById('yearFilter'),
+  categoryFilters: document.getElementById('categoryFilters'),
 };
 
 async function fetchJson(url, options = {}) {
@@ -85,6 +95,7 @@ function makeCard(item) {
   const link = document.createElement('a');
   link.className = 'work-card';
   link.href = `artwork.html?id=${encodeURIComponent(item.id)}`;
+  link.dataset.category = item.category || '';
   link.setAttribute('aria-label', item.title || 'Artwork detail');
 
   const image = document.createElement('img');
@@ -103,86 +114,152 @@ function makeCard(item) {
   overlay.appendChild(title);
   link.appendChild(image);
   link.appendChild(overlay);
-
   return link;
 }
 
-function renderWorks(items, append = true) {
+function renderVisibleItems() {
   if (!appEls.worksGrid) return;
-
-  if (!append) {
-    appEls.worksGrid.innerHTML = '';
-  }
-
-  items.forEach((item) => {
+  appEls.worksGrid.innerHTML = '';
+  appState.visibleItems.forEach((item) => {
     appEls.worksGrid.appendChild(makeCard(item));
   });
 
-  const currentItems = appEls.worksGrid.querySelectorAll('.work-card').length;
-  const uniqueCategories = new Set(
-    Array.from(appEls.worksGrid.querySelectorAll('.work-card')).map((card) =>
-      card.dataset.category || ''
-    )
-  );
+  const categories = new Set(appState.filteredItems.map((item) => item.category).filter(Boolean));
 
-  if (appEls.publicCount) appEls.publicCount.textContent = String(currentItems);
-  if (appEls.categoryCount) {
-    // fallback without card dataset
-    const set = new Set(items.map((item) => item.category).filter(Boolean));
-    const current = Number(appEls.categoryCount.dataset.current || 0);
-    const total = Math.max(current, set.size);
-    appEls.categoryCount.textContent = String(total || set.size);
-    appEls.categoryCount.dataset.current = String(total || set.size);
+  if (appEls.publicCount) appEls.publicCount.textContent = String(appState.filteredItems.length);
+  if (appEls.categoryCount) appEls.categoryCount.textContent = String(categories.size);
+
+  if (appEls.worksEmpty) appEls.worksEmpty.hidden = appState.visibleItems.length > 0;
+}
+
+function appendMoreVisibleItems() {
+  const next = appState.filteredItems.slice(appState.offset, appState.offset + appState.limit);
+  if (!next.length) {
+    appState.hasMoreFiltered = false;
+    return;
   }
+  appState.visibleItems = [...appState.visibleItems, ...next];
+  appState.offset += next.length;
+  appState.hasMoreFiltered = appState.offset < appState.filteredItems.length;
+  renderVisibleItems();
+}
 
-  if (appEls.worksEmpty) {
-    appEls.worksEmpty.hidden = currentItems > 0;
+function applyFilters(reset = true) {
+  const keyword = appState.keyword.trim().toLowerCase();
+  const selectedYear = appState.selectedYear;
+  const selectedCategories = appState.selectedCategories;
+
+  appState.filteredItems = appState.allItems.filter((item) => {
+    const haystack = [item.title, item.description, item.tags, item.category, item.year]
+      .join(' ')
+      .toLowerCase();
+
+    const yearOk = !selectedYear || String(item.year || '') === selectedYear;
+    const categoryOk = selectedCategories.size === 0 || selectedCategories.has(String(item.category || ''));
+    const keywordOk = !keyword || haystack.includes(keyword);
+
+    return yearOk && categoryOk && keywordOk;
+  });
+
+  if (reset) {
+    appState.offset = 0;
+    appState.visibleItems = [];
+    appState.hasMoreFiltered = true;
+    appendMoreVisibleItems();
+  } else {
+    renderVisibleItems();
   }
 }
 
-async function loadWorks() {
-  if (appState.loading || !appState.hasMore) return;
+function buildYearOptions() {
+  if (!appEls.yearFilter) return;
+  const years = [...new Set(appState.allItems.map((item) => String(item.year || '')).filter(Boolean))]
+    .sort((a, b) => Number(b) - Number(a));
 
-  appState.loading = true;
+  appEls.yearFilter.innerHTML = '<option value="">전체 연도</option>';
+  years.forEach((year) => {
+    const option = document.createElement('option');
+    option.value = year;
+    option.textContent = year;
+    appEls.yearFilter.appendChild(option);
+  });
+}
+
+function buildCategoryFilters() {
+  if (!appEls.categoryFilters) return;
+  const categories = [...new Set(appState.allItems.map((item) => String(item.category || '')).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'ko'));
+
+  appEls.categoryFilters.innerHTML = '';
+  categories.forEach((category, index) => {
+    const label = document.createElement('label');
+    label.className = 'checkbox-chip';
+
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.value = category;
+    input.addEventListener('change', () => {
+      if (input.checked) {
+        appState.selectedCategories.add(category);
+      } else {
+        appState.selectedCategories.delete(category);
+      }
+      applyFilters(true);
+    });
+
+    const text = document.createElement('span');
+    text.textContent = category;
+
+    label.appendChild(input);
+    label.appendChild(text);
+    appEls.categoryFilters.appendChild(label);
+  });
+}
+
+async function loadAllWorks() {
   if (appEls.worksLoading) appEls.worksLoading.hidden = false;
-
   try {
-    const data = await fetchJson(`/api/artworks?public=1&limit=${appState.limit}&offset=${appState.offset}`);
-    const items = Array.isArray(data?.items) ? data.items : [];
-    const total = Number(data?.total || 0);
-
-    renderWorks(items, true);
-
-    const allCards = document.querySelectorAll('.work-card').length;
-    appState.offset += items.length;
-    appState.hasMore = items.length === appState.limit && (total === 0 || allCards < total);
-
-    if (!items.length && appState.offset === 0 && appEls.worksEmpty) {
-      appEls.worksEmpty.hidden = false;
-    }
+    const data = await fetchJson('/api/artworks?public=1&limit=200&offset=0');
+    appState.allItems = Array.isArray(data?.items) ? data.items : [];
+    buildYearOptions();
+    buildCategoryFilters();
+    applyFilters(true);
   } catch (err) {
     console.warn(err);
-    if (appEls.worksEmpty && appState.offset === 0) {
+    if (appEls.worksEmpty) {
       appEls.worksEmpty.hidden = false;
       appEls.worksEmpty.textContent = '작품을 불러오지 못했습니다.';
     }
-    appState.hasMore = false;
   } finally {
-    appState.loading = false;
     if (appEls.worksLoading) appEls.worksLoading.hidden = true;
   }
 }
 
 function initInfiniteScroll() {
   if (!appEls.sentinel) return;
-  const io = new IntersectionObserver((entries) => {
+  appState.observer = new IntersectionObserver((entries) => {
     if (entries.some((entry) => entry.isIntersecting)) {
-      loadWorks();
+      if (appState.hasMoreFiltered) {
+        appendMoreVisibleItems();
+      }
     }
   }, { rootMargin: '400px 0px' });
-  io.observe(appEls.sentinel);
+  appState.observer.observe(appEls.sentinel);
+}
+
+function bindEvents() {
+  appEls.keywordSearch?.addEventListener('input', (e) => {
+    appState.keyword = e.target.value || '';
+    applyFilters(true);
+  });
+
+  appEls.yearFilter?.addEventListener('change', (e) => {
+    appState.selectedYear = e.target.value || '';
+    applyFilters(true);
+  });
 }
 
 loadProfile();
-loadWorks();
+bindEvents();
+loadAllWorks();
 initInfiniteScroll();

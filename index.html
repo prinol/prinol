@@ -39,8 +39,25 @@
     </section>
 
     <section id="works" class="works-section">
-      <div class="section-head">
-        <h2>Works</h2>
+      <div class="works-toolbar">
+        <div class="section-head works-head">
+          <h2>Works</h2>
+          <input id="keywordSearch" class="works-search" type="search" placeholder="키워드 검색">
+        </div>
+
+        <div class="filter-stack">
+          <div class="filter-row">
+            <label class="filter-label" for="yearFilter">연도</label>
+            <select id="yearFilter" class="filter-select">
+              <option value="">전체 연도</option>
+            </select>
+          </div>
+
+          <div class="filter-row categories-row">
+            <span class="filter-label">카테고리</span>
+            <div id="categoryFilters" class="checkbox-group"></div>
+          </div>
+        </div>
       </div>
 
       <div id="worksGrid" class="works-grid" aria-live="polite"></div>
