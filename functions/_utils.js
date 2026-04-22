@@ -12,8 +12,8 @@ function badRequest(message = 'Bad request') {
   return json({ error: message }, { status: 400 });
 }
 
-function serverError(message = 'Server error') {
-  return json({ error: message }, { status: 500 });
+function serverError(message = 'Server error', detail = '') {
+  return json({ error: message, detail }, { status: 500 });
 }
 
 function getCookie(request, name) {
@@ -23,7 +23,7 @@ function getCookie(request, name) {
 }
 
 function createSessionCookie(password) {
-  const secure = 'Secure; '; // pages.dev is https
+  const secure = 'Secure; ';
   return `admin_session=${encodeURIComponent(password)}; Path=/; HttpOnly; SameSite=Lax; ${secure}Max-Age=604800`;
 }
 
@@ -35,6 +35,18 @@ function clearSessionCookie() {
 function isAuthorized(request, env) {
   const token = getCookie(request, 'admin_session');
   return !!env.ADMIN_KEY && token === env.ADMIN_KEY;
+}
+
+async function columnExists(env, tableName, columnName) {
+  const rows = await env.DB.prepare(`PRAGMA table_info(${tableName})`).all();
+  return (rows.results || []).some((row) => row.name === columnName);
+}
+
+async function addColumnIfMissing(env, tableName, definition) {
+  const name = definition.trim().split(/\s+/)[0];
+  if (!(await columnExists(env, tableName, name))) {
+    await env.DB.prepare(`ALTER TABLE ${tableName} ADD COLUMN ${definition}`).run();
+  }
 }
 
 async function ensureSchema(env) {
@@ -64,12 +76,25 @@ async function ensureSchema(env) {
       contact_instagram TEXT NOT NULL DEFAULT '',
       updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
     )`),
-    env.DB.prepare(`INSERT OR IGNORE INTO site_profile (
+  ]);
+
+  // Migrate older profile tables created by previous versions.
+  await addColumnIfMissing(env, 'site_profile', `hero_title TEXT NOT NULL DEFAULT 'PRINOL'`);
+  await addColumnIfMissing(env, 'site_profile', `hero_subtitle TEXT NOT NULL DEFAULT 'Personal Artwork Portfolio'`);
+  await addColumnIfMissing(env, 'site_profile', `about_title TEXT NOT NULL DEFAULT '작가 소개'`);
+  await addColumnIfMissing(env, 'site_profile', `about_body TEXT NOT NULL DEFAULT '작가 소개 문장을 입력하세요.'`);
+  await addColumnIfMissing(env, 'site_profile', `awards_text TEXT NOT NULL DEFAULT ''`);
+  await addColumnIfMissing(env, 'site_profile', `contact_email TEXT NOT NULL DEFAULT ''`);
+  await addColumnIfMissing(env, 'site_profile', `contact_instagram TEXT NOT NULL DEFAULT ''`);
+  await addColumnIfMissing(env, 'site_profile', `updated_at TEXT NOT NULL DEFAULT ''`);
+
+  await env.DB.prepare(`
+    INSERT OR IGNORE INTO site_profile (
       id, hero_title, hero_subtitle, about_title, about_body, awards_text, contact_email, contact_instagram, updated_at
     ) VALUES (
       1, 'PRINOL', 'Personal Artwork Portfolio', '작가 소개', '작가 소개 문장을 입력하세요.', '', '', '', strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-    )`)
-  ]);
+    )
+  `).run();
 }
 
 function fileExtension(filename = '') {
