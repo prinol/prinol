@@ -8,14 +8,13 @@ const TAG_CLASSES = [
 ];
 
 const els = {
-  detailCard: document.getElementById('detailCard'),
-  detailError: document.getElementById('detailError'),
-  detailImage: document.getElementById('detailImage'),
-  detailTitle: document.getElementById('detailTitle'),
-  detailYear: document.getElementById('detailYear'),
-  detailCategory: document.getElementById('detailCategory'),
-  detailDescription: document.getElementById('detailDescription'),
-  detailTags: document.getElementById('detailTags'),
+  image: document.getElementById('detailImage'),
+  title: document.getElementById('detailTitle'),
+  year: document.getElementById('detailYear'),
+  category: document.getElementById('detailCategory'),
+  description: document.getElementById('detailDescription'),
+  tags: document.getElementById('detailTags'),
+  error: document.getElementById('detailError'),
 };
 
 function splitTags(value) {
@@ -24,62 +23,55 @@ function splitTags(value) {
   return String(value).split(',').map(v => v.trim()).filter(Boolean);
 }
 
-function getId() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get('id');
+function renderTags(tags) {
+  if (!els.tags) return;
+  els.tags.innerHTML = '';
+  tags.forEach((tag, index) => {
+    const span = document.createElement('span');
+    span.className = TAG_CLASSES[index % TAG_CLASSES.length];
+    span.textContent = tag;
+    els.tags.appendChild(span);
+  });
 }
 
 async function fetchJson(url) {
   const res = await fetch(url, { headers: { accept: 'application/json' } });
   const text = await res.text();
-  let data;
+  let data = {};
   try {
     data = text ? JSON.parse(text) : {};
-  } catch {
-    throw new Error(`JSON 응답이 아닙니다: ${url}`);
-  }
-  if (!res.ok) {
-    throw new Error(data?.error || data?.message || `요청 실패: ${res.status}`);
-  }
+  } catch {}
+  if (!res.ok) throw new Error(data?.error || data?.message || `요청 실패 (${res.status})`);
   return data;
 }
 
-function renderTags(tags) {
-  els.detailTags.innerHTML = '';
-  tags.forEach((tag, index) => {
-    const span = document.createElement('span');
-    span.className = TAG_CLASSES[index % TAG_CLASSES.length];
-    span.textContent = tag;
-    els.detailTags.appendChild(span);
-  });
-}
-
 async function init() {
-  const id = getId();
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
   if (!id) {
-    els.detailError.classList.remove('hidden');
+    if (els.error) els.error.hidden = false;
     return;
   }
 
   try {
-    const raw = await fetchJson('/api/artworks');
-    const items = raw?.items ?? raw?.artworks ?? raw?.data ?? [];
-    const item = Array.isArray(items) ? items.find(v => String(v.id) === String(id)) : null;
+    const data = await fetchJson('/api/artworks?public=1&limit=100&offset=0');
+    const items = Array.isArray(data?.items) ? data.items : [];
+    const item = items.find(v => String(v.id) === String(id));
 
-    if (!item) throw new Error('작품이 없습니다.');
+    if (!item) throw new Error('작품을 찾을 수 없습니다.');
 
-    els.detailImage.src = item.image_url || `/images/${item.image_key}`;
-    els.detailImage.alt = item.title || 'Artwork';
-    els.detailTitle.textContent = item.title || '';
-    els.detailYear.textContent = item.year || '';
-    els.detailCategory.textContent = item.category || '';
-    els.detailDescription.textContent = item.description || '';
+    if (els.image) {
+      els.image.src = item.image_url || `/images/${item.image_key}`;
+      els.image.alt = item.title || 'Artwork';
+    }
+    if (els.title) els.title.textContent = item.title || 'Untitled';
+    if (els.year) els.year.textContent = item.year || '';
+    if (els.category) els.category.textContent = item.category || '';
+    if (els.description) els.description.textContent = item.description || '';
     renderTags(splitTags(item.tags));
-
-    els.detailCard.classList.remove('hidden');
   } catch (err) {
     console.warn(err);
-    els.detailError.classList.remove('hidden');
+    if (els.error) els.error.hidden = false;
   }
 }
 

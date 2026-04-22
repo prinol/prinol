@@ -3,44 +3,43 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Artwork | PRINOL</title>
+  <title>PRINOL | Artwork</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="site-header">
-    <div class="container nav-row">
-      <a class="brand" href="./">PRINOL</a>
-      <nav class="nav-links">
+    <div class="header-inner">
+      <a class="site-logo" href="./">PRINOL</a>
+      <nav class="site-nav">
         <a href="./#works">Works</a>
         <a href="./#about">About</a>
       </nav>
     </div>
   </header>
 
-  <main class="section">
-    <div class="container">
-      <a class="back-link" href="./#works">← 공개 작품으로 돌아가기</a>
+  <main>
+    <section class="detail-section">
+      <a class="back-link" href="./#works">← 공개 페이지로 돌아가기</a>
 
-      <article class="detail-card hidden" id="detailCard">
-        <div class="detail-grid">
-          <div class="detail-image-wrap">
-            <img id="detailImage" class="detail-image" alt="">
-          </div>
-          <div class="detail-content">
-            <p class="eyebrow">DETAIL</p>
-            <h1 id="detailTitle">작품 제목</h1>
-            <div class="detail-meta-row">
-              <span id="detailYear" class="detail-year"></span>
-              <span id="detailCategory" class="detail-category"></span>
-            </div>
-            <p id="detailDescription" class="detail-description"></p>
-            <div id="detailTags" class="detail-tags"></div>
-          </div>
+      <div class="detail-layout">
+        <div class="detail-image-panel">
+          <img id="detailImage" class="detail-image" alt="">
         </div>
-      </article>
 
-      <p id="detailError" class="empty-state hidden">작품을 불러올 수 없습니다.</p>
-    </div>
+        <div class="detail-info-panel">
+          <p class="hero-kicker">ARTWORK</p>
+          <h1 id="detailTitle">Untitled</h1>
+          <div class="detail-meta">
+            <span id="detailYear"></span>
+            <span id="detailCategory"></span>
+          </div>
+          <p id="detailDescription" class="detail-description"></p>
+          <div id="detailTags" class="detail-tags"></div>
+        </div>
+      </div>
+
+      <p id="detailError" class="empty-message" hidden>작품 정보를 불러오지 못했습니다.</p>
+    </section>
   </main>
 
   <script src="artwork.js" defer></script>
