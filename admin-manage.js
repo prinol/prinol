@@ -27,6 +27,7 @@ const manageEls = {
 };
 
 function manageStatus(message, isError = false) {
+  if (!manageEls.status) return;
   manageEls.status.textContent = message || '';
   manageEls.status.classList.toggle('error', !!isError);
   manageEls.status.classList.toggle('success', !isError && !!message);
@@ -83,7 +84,7 @@ function sortItems(items) {
 }
 
 function applySearch() {
-  const q = (manageEls.search.value || '').trim().toLowerCase();
+  const q = (manageEls.search?.value || '').trim().toLowerCase();
   const publicOnly = !!manageEls.publicOnlyFilter?.checked;
 
   let items = manageState.artworks.filter(item => {
@@ -91,7 +92,6 @@ function applySearch() {
       .join(' ')
       .toLowerCase()
       .includes(q);
-
     const matchesPublic = !publicOnly || !!item.is_public;
     return matchesText && matchesPublic;
   });
@@ -104,32 +104,35 @@ function setSelected(item) {
   manageState.selected = item || null;
 
   if (!item) {
-    manageEls.editorTitle.textContent = '작품을 선택하세요';
-    manageEls.editorEmpty.classList.remove('hidden');
-    manageEls.editorForm.classList.add('hidden');
-    manageEls.saveButton.disabled = true;
+    if (manageEls.editorTitle) manageEls.editorTitle.textContent = '작품을 선택하세요';
+    manageEls.editorEmpty?.classList.remove('hidden');
+    manageEls.editorForm?.classList.add('hidden');
+    if (manageEls.saveButton) manageEls.saveButton.disabled = true;
     manageStatus('');
     return;
   }
 
-  manageEls.editorTitle.textContent = item.title || '선택된 작품';
-  manageEls.editorEmpty.classList.add('hidden');
-  manageEls.editorForm.classList.remove('hidden');
-  manageEls.saveButton.disabled = false;
+  if (manageEls.editorTitle) manageEls.editorTitle.textContent = item.title || '선택된 작품';
+  manageEls.editorEmpty?.classList.add('hidden');
+  manageEls.editorForm?.classList.remove('hidden');
+  if (manageEls.saveButton) manageEls.saveButton.disabled = false;
 
-  manageEls.editorImage.src = item.image_url || `/images/${item.image_key}`;
-  manageEls.editorImage.alt = item.title || 'Artwork';
-  manageEls.editTitle.value = item.title || '';
-  manageEls.editYear.value = item.year || '';
-  manageEls.editCategory.value = item.category || '';
-  manageEls.editTags.value = item.tags || '';
-  manageEls.editDescription.value = item.description || '';
-  manageEls.editPublic.checked = !!item.is_public;
+  if (manageEls.editorImage) {
+    manageEls.editorImage.src = item.image_url || `/images/${item.image_key}`;
+    manageEls.editorImage.alt = item.title || 'Artwork';
+  }
+  if (manageEls.editTitle) manageEls.editTitle.value = item.title || '';
+  if (manageEls.editYear) manageEls.editYear.value = item.year || '';
+  if (manageEls.editCategory) manageEls.editCategory.value = item.category || '';
+  if (manageEls.editTags) manageEls.editTags.value = item.tags || '';
+  if (manageEls.editDescription) manageEls.editDescription.value = item.description || '';
+  if (manageEls.editPublic) manageEls.editPublic.checked = !!item.is_public;
 }
 
 function renderList() {
+  if (!manageEls.list || !manageEls.template) return;
   manageEls.list.innerHTML = '';
-  manageEls.count.textContent = `총 ${manageState.filtered.length}개`;
+  if (manageEls.count) manageEls.count.textContent = `총 ${manageState.filtered.length}개`;
 
   if (!manageState.filtered.length) {
     const div = document.createElement('div');
@@ -148,22 +151,24 @@ function renderList() {
     const publicToggle = row.querySelector('.row-public-toggle');
     const deleteButton = row.querySelector('.row-delete-button');
 
-    thumb.src = item.image_url || `/images/${item.image_key}`;
-    thumb.alt = item.title || 'Artwork';
-    title.textContent = item.title || '(제목 없음)';
-    meta.textContent = [item.year, item.category].filter(Boolean).join(' · ');
-    publicToggle.checked = !!item.is_public;
+    if (thumb) {
+      thumb.src = item.image_url || `/images/${item.image_key}`;
+      thumb.alt = item.title || 'Artwork';
+    }
+    if (title) title.textContent = item.title || '(제목 없음)';
+    if (meta) meta.textContent = [item.year, item.category].filter(Boolean).join(' · ');
+    if (publicToggle) publicToggle.checked = !!item.is_public;
 
     if (manageState.selected && String(manageState.selected.id) === String(item.id)) {
       row.classList.add('selected');
     }
 
-    mainButton.addEventListener('click', () => {
+    mainButton?.addEventListener('click', () => {
       setSelected(item);
       renderList();
     });
 
-    publicToggle.addEventListener('change', async (e) => {
+    publicToggle?.addEventListener('change', async (e) => {
       e.stopPropagation();
       try {
         await manageFetchJson('/api/update', {
@@ -182,7 +187,7 @@ function renderList() {
         item.is_public = publicToggle.checked ? 1 : 0;
         if (manageState.selected && String(manageState.selected.id) === String(item.id)) {
           manageState.selected.is_public = item.is_public;
-          manageEls.editPublic.checked = !!item.is_public;
+          if (manageEls.editPublic) manageEls.editPublic.checked = !!item.is_public;
         }
         applySearch();
         manageStatus('공개 여부를 수정했습니다.');
@@ -192,7 +197,7 @@ function renderList() {
       }
     });
 
-    deleteButton.addEventListener('click', async (e) => {
+    deleteButton?.addEventListener('click', async (e) => {
       e.stopPropagation();
       const ok = confirm(`"${item.title || '이 작품'}"을 삭제할까요?`);
       if (!ok) return;
@@ -236,12 +241,12 @@ async function saveSelectedArtwork() {
   manageStatus('수정 저장 중...');
   const payload = {
     id: manageState.selected.id,
-    title: manageEls.editTitle.value.trim(),
-    year: manageEls.editYear.value.trim(),
-    category: manageEls.editCategory.value.trim(),
-    tags: manageEls.editTags.value.trim(),
-    description: manageEls.editDescription.value,
-    is_public: manageEls.editPublic.checked ? 1 : 0
+    title: manageEls.editTitle?.value.trim() || '',
+    year: manageEls.editYear?.value.trim() || '',
+    category: manageEls.editCategory?.value.trim() || '',
+    tags: manageEls.editTags?.value.trim() || '',
+    description: manageEls.editDescription?.value || '',
+    is_public: manageEls.editPublic?.checked ? 1 : 0
   };
 
   try {

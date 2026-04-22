@@ -107,6 +107,27 @@
         <div class="status-line" id="editorStatus"></div>
       </section>
     </section>
+
+    <template id="artListItemTemplate">
+      <div class="art-row">
+        <button class="art-row-main" type="button">
+          <div class="art-row-thumb-wrap">
+            <img class="art-row-thumb" alt="">
+          </div>
+          <div class="art-row-text">
+            <strong class="art-row-title"></strong>
+            <div class="art-row-meta"></div>
+          </div>
+        </button>
+        <div class="art-row-quick">
+          <label class="row-toggle">
+            <input class="row-public-toggle" type="checkbox">
+            <span>공개</span>
+          </label>
+          <button class="danger-button row-delete-button" type="button">삭제</button>
+        </div>
+      </div>
+    </template>
   </main>
 
   <script src="admin-shell.js" defer></script>

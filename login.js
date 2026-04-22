@@ -1,29 +1,43 @@
-const loginForm = document.getElementById('loginForm');
-const passwordInput = document.getElementById('password');
-const loginError = document.getElementById('loginError');
+const loginEls = {
+  password: document.getElementById('adminPassword'),
+  button: document.getElementById('loginButton'),
+  status: document.getElementById('loginStatus'),
+};
 
-function showError(message) {
-  loginError.textContent = message;
-  loginError.classList.remove('hidden');
+function loginStatus(message, isError = false) {
+  if (!loginEls.status) return;
+  loginEls.status.textContent = message || '';
+  loginEls.status.classList.toggle('error', !!isError);
+  loginEls.status.classList.toggle('success', !isError && !!message);
 }
 
-loginForm?.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  loginError.classList.add('hidden');
-
-  try {
-    const response = await fetch('/api/auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: passwordInput.value })
-    });
-
-    const data = await response.json();
-    if (!response.ok || !data.ok) {
-      throw new Error(data.error || '로그인에 실패했습니다.');
-    }
-    location.href = '/admin.html';
-  } catch (error) {
-    showError(error.message);
+async function doLogin() {
+  const password = loginEls.password?.value || '';
+  if (!password.trim()) {
+    loginStatus('관리자 암호를 입력하세요.', true);
+    return;
   }
+
+  loginStatus('로그인 중...');
+  try {
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({ action: 'login', password })
+    });
+    const text = await res.text();
+    let data = {};
+    try { data = text ? JSON.parse(text) : {}; } catch {}
+    if (!res.ok) throw new Error(data?.error || data?.message || `요청 실패 (${res.status})`);
+
+    loginStatus('로그인 성공');
+    location.href = '/admin.html';
+  } catch (err) {
+    loginStatus(err.message || '로그인에 실패했습니다.', true);
+  }
+}
+
+loginEls.button?.addEventListener('click', doLogin);
+loginEls.password?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') doLogin();
 });
