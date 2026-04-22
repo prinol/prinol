@@ -12,7 +12,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "a00a4e47-dc6d-4107-bd42-480b7c1d7b21"
+      "database_name": "prinol-db"
     }
   ]
 }
