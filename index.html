@@ -1,82 +1,109 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My Art Portfolio</title>
-  <meta name="description" content="개인 아트웍 포트폴리오" />
+  <title>PRINOL ART PORTFOLIO</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <div class="bg-orb orb-1"></div>
-  <div class="bg-orb orb-2"></div>
-
   <header class="site-header">
-    <div class="brand">ARTFOLIO</div>
-    <nav>
-      <a href="#works">작품</a>
-      <a href="#about">소개</a>
-      <a href="#contact">연락</a>
-    </nav>
+    <div class="wrap nav">
+      <a class="brand" href="./">PRINOL</a>
+      <nav>
+        <a href="#gallery">Works</a>
+        <a href="#about">About</a>
+        <a href="./admin.html">Admin</a>
+      </nav>
+    </div>
   </header>
 
   <main>
-    <section class="hero">
-      <div class="hero-text">
-        <p class="eyebrow">PERSONAL ARTWORK PORTFOLIO</p>
-        <h1>스마트폰으로 정리하고<br>깔끔하게 보여주는 아트 포트폴리오</h1>
-        <p class="hero-copy">
-          작품 이미지를 가볍게 정리하고, 대표작을 감각적인 카드 레이아웃으로 보여주는
-          최소 포트폴리오 템플릿입니다.
-        </p>
-        <div class="hero-actions">
-          <a class="btn btn-primary" href="#works">대표 작품 보기</a>
-          <a class="btn btn-secondary" href="#about">포트폴리오 소개</a>
-        </div>
+    <section class="hero wrap">
+      <div class="hero-copy">
+        <p class="eyebrow">Artist Portfolio</p>
+        <h1>작품이 가장 돋보이도록 정리된 미니멀 포트폴리오</h1>
+        <p class="lead">Cloudflare Pages + Functions + R2 + D1 기반 1차 버전입니다. 공개 작품은 자동으로 갤러리에 반영됩니다.</p>
       </div>
       <div class="hero-card">
-        <div class="hero-card-inner">
-          <span class="badge">Featured</span>
-          <img src="https://images.unsplash.com/photo-1515405295579-ba7b45403062?auto=format&fit=crop&w=1200&q=80" alt="대표 작품 예시" />
-          <div class="hero-card-meta">
-            <strong>Untitled Composition</strong>
-            <span>Mixed media · 2026</span>
-          </div>
+        <div class="stat">
+          <span class="stat-label">Public Works</span>
+          <strong id="publicCount">0</strong>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Categories</span>
+          <strong id="categoryCount">0</strong>
         </div>
       </div>
     </section>
 
-    <section id="works" class="section">
-      <div class="section-head">
-        <div>
-          <p class="eyebrow">SELECTED WORKS</p>
-          <h2>대표 작품</h2>
-        </div>
-        <div class="filter-row" id="filterRow"></div>
+    <section class="wrap controls" id="gallery">
+      <div class="control-group">
+        <label for="searchInput">검색</label>
+        <input id="searchInput" type="search" placeholder="제목, 설명, 태그 검색" />
       </div>
-      <div class="gallery" id="gallery"></div>
+      <div class="control-group">
+        <label for="categoryFilter">카테고리</label>
+        <select id="categoryFilter">
+          <option value="all">전체</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="yearFilter">연도</label>
+        <select id="yearFilter">
+          <option value="all">전체</option>
+        </select>
+      </div>
     </section>
 
-    <section id="about" class="section about">
+    <section class="wrap">
+      <div id="galleryGrid" class="gallery-grid"></div>
+      <div id="emptyState" class="empty hidden">아직 공개된 작품이 없습니다.</div>
+    </section>
+
+    <section class="wrap about" id="about">
       <div>
-        <p class="eyebrow">ABOUT</p>
+        <p class="eyebrow">About</p>
         <h2>작가 소개</h2>
+        <p>이 영역의 문구는 자유롭게 수정하면 됩니다. 작업 세계, 재료, 관심 주제, 전시 이력을 간략히 적어두면 좋습니다.</p>
       </div>
-      <p>
-        여기에 작가 소개를 넣으면 됩니다. 작업의 주제, 재료, 관심 있는 시리즈,
-        전시 이력 등을 간결하게 정리하세요. 처음에는 3~5문장 정도가 가장 보기 좋습니다.
-      </p>
+      <div class="contact-card">
+        <h3>Contact</h3>
+        <p>Email: yourname@example.com</p>
+        <p>Instagram: @yourhandle</p>
+      </div>
     </section>
   </main>
 
-  <footer id="contact" class="site-footer">
-    <p>Contact · yourname@email.com · @youraccount</p>
-    <p class="footer-note">Cloudflare Pages용 최소 포트폴리오 템플릿</p>
-  </footer>
+  <template id="artCardTemplate">
+    <article class="art-card">
+      <button class="card-image-button" type="button">
+        <img alt="" loading="lazy" />
+      </button>
+      <div class="card-body">
+        <div class="card-topline">
+          <span class="card-category"></span>
+          <span class="card-year"></span>
+        </div>
+        <h3 class="card-title"></h3>
+        <p class="card-description"></p>
+        <div class="card-tags"></div>
+      </div>
+    </article>
+  </template>
 
-  <script src="app.js"></script>
+  <dialog id="lightbox" class="lightbox">
+    <button id="closeLightbox" class="lightbox-close" type="button" aria-label="닫기">×</button>
+    <img id="lightboxImage" alt="" />
+    <div class="lightbox-meta">
+      <h3 id="lightboxTitle"></h3>
+      <p id="lightboxDescription"></p>
+    </div>
+  </dialog>
+
+  <script src="./app.js" defer></script>
 </body>
 </html>
