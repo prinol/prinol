@@ -73,6 +73,9 @@ export async function ensureSiteProfileTable(env) {
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS site_profile (
       id INTEGER PRIMARY KEY CHECK (id = 1),
+      hero_title TEXT NOT NULL DEFAULT '',
+      hero_subtitle TEXT NOT NULL DEFAULT '',
+      about_title TEXT NOT NULL DEFAULT '',
       artist_intro TEXT NOT NULL DEFAULT '',
       awards_text TEXT NOT NULL DEFAULT '',
       contact_email TEXT NOT NULL DEFAULT '',
@@ -81,12 +84,31 @@ export async function ensureSiteProfileTable(env) {
     )
   `).run();
 
+  const columns = await env.DB.prepare(`PRAGMA table_info(site_profile)`).all();
+  const existingColumns = new Set((columns.results || []).map((col) => col.name));
+
+  const requiredColumns = [
+    ['hero_title', "TEXT NOT NULL DEFAULT ''"],
+    ['hero_subtitle', "TEXT NOT NULL DEFAULT ''"],
+    ['about_title', "TEXT NOT NULL DEFAULT ''"],
+    ['artist_intro', "TEXT NOT NULL DEFAULT ''"],
+    ['awards_text', "TEXT NOT NULL DEFAULT ''"],
+    ['contact_email', "TEXT NOT NULL DEFAULT ''"],
+    ['contact_instagram', "TEXT NOT NULL DEFAULT ''"],
+  ];
+
+  for (const [name, type] of requiredColumns) {
+    if (!existingColumns.has(name)) {
+      await env.DB.prepare(`ALTER TABLE site_profile ADD COLUMN ${name} ${type}`).run();
+    }
+  }
+
   const existing = await env.DB.prepare(`SELECT id FROM site_profile WHERE id = 1`).first();
   if (!existing) {
     const now = new Date().toISOString();
     await env.DB.prepare(`
-      INSERT INTO site_profile (id, artist_intro, awards_text, contact_email, contact_instagram, updated_at)
-      VALUES (1, '', '', '', '', ?1)
+      INSERT INTO site_profile (id, hero_title, hero_subtitle, about_title, artist_intro, awards_text, contact_email, contact_instagram, updated_at)
+      VALUES (1, '', '', '', '', '', '', '', ?1)
     `).bind(now).run();
   }
 }
