@@ -2,5 +2,17 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "prinol-artfolio",
   "compatibility_date": "2026-04-22",
-  "pages_build_output_dir": "."
+  "pages_build_output_dir": ".",
+  "r2_buckets": [
+    {
+      "binding": "ART_BUCKET",
+      "bucket_name": "prinol-artworks"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "prinol-db"
+    }
+  ]
 }
