@@ -4,12 +4,12 @@ const appState = {
   visibleItems: [],
   offset: 0,
   limit: 12,
-  rendering: false,
   hasMoreFiltered: true,
   observer: null,
   selectedYear: '',
   selectedCategories: new Set(),
   keyword: '',
+  theme: 'dark',
 };
 
 const appEls = {
@@ -28,6 +28,8 @@ const appEls = {
   keywordSearch: document.getElementById('keywordSearch'),
   yearFilter: document.getElementById('yearFilter'),
   categoryFilters: document.getElementById('categoryFilters'),
+  themeToggle: document.getElementById('themeToggle'),
+  themeToggleLabel: document.getElementById('themeToggleLabel'),
 };
 
 async function fetchJson(url, options = {}) {
@@ -191,7 +193,7 @@ function buildCategoryFilters() {
     .sort((a, b) => a.localeCompare(b, 'ko'));
 
   appEls.categoryFilters.innerHTML = '';
-  categories.forEach((category, index) => {
+  categories.forEach((category) => {
     const label = document.createElement('label');
     label.className = 'checkbox-chip';
 
@@ -247,6 +249,47 @@ function initInfiniteScroll() {
   appState.observer.observe(appEls.sentinel);
 }
 
+function getPreferredTheme() {
+  const saved = localStorage.getItem('prinol-theme');
+  if (saved === 'light' || saved === 'dark') return saved;
+  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+
+function applyTheme(theme, persist = true) {
+  appState.theme = theme;
+  document.documentElement.dataset.theme = theme;
+
+  if (appEls.themeToggle) {
+    const isLight = theme === 'light';
+    appEls.themeToggle.setAttribute('aria-pressed', String(isLight));
+  }
+  if (appEls.themeToggleLabel) {
+    appEls.themeToggleLabel.textContent = theme === 'light' ? 'Light' : 'Dark';
+  }
+
+  if (persist) {
+    localStorage.setItem('prinol-theme', theme);
+  }
+}
+
+function bindTheme() {
+  const initial = getPreferredTheme();
+  applyTheme(initial, false);
+
+  appEls.themeToggle?.addEventListener('click', () => {
+    const next = appState.theme === 'dark' ? 'light' : 'dark';
+    applyTheme(next, true);
+  });
+
+  const media = window.matchMedia('(prefers-color-scheme: light)');
+  media.addEventListener?.('change', (e) => {
+    const saved = localStorage.getItem('prinol-theme');
+    if (!saved) {
+      applyTheme(e.matches ? 'light' : 'dark', false);
+    }
+  });
+}
+
 function bindEvents() {
   appEls.keywordSearch?.addEventListener('input', (e) => {
     appState.keyword = e.target.value || '';
@@ -259,6 +302,7 @@ function bindEvents() {
   });
 }
 
+bindTheme();
 loadProfile();
 bindEvents();
 loadAllWorks();

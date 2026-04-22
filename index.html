@@ -10,11 +10,21 @@
   <header class="site-header">
     <div class="header-inner">
       <a class="site-logo" href="./">PRINOL</a>
-      <nav class="site-nav">
-        <a href="#works">Works</a>
-        <a href="#about">About</a>
-        <a href="admin.html">Admin</a>
-      </nav>
+
+      <div class="header-right">
+        <nav class="site-nav">
+          <a href="#works">Works</a>
+          <a href="#about">About</a>
+          <a href="admin.html">Admin</a>
+        </nav>
+
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="테마 전환" aria-pressed="false">
+          <span class="theme-toggle-track">
+            <span class="theme-toggle-thumb"></span>
+          </span>
+          <span id="themeToggleLabel" class="theme-toggle-label">Dark</span>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -78,7 +88,7 @@
 
         <aside class="about-side">
           <div class="info-card">
-            <h3>Awards</h3>
+            <h3>Education &amp; Awards</h3>
             <ul id="awardsList" class="awards-list"></ul>
 
             <div class="email-block">
