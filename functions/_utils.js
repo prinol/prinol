@@ -1,3 +1,5 @@
+const ADMIN_COOKIE = 'prinol_admin_session';
+
 export function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
     headers: {
@@ -22,11 +24,41 @@ export function parseAuth(request) {
   return value.startsWith('Bearer ') ? value.slice(7) : '';
 }
 
-export function requireAdmin(request, env) {
-  if (!env.ADMIN_KEY) return { ok: true };
+export function parseCookies(request) {
+  const raw = request.headers.get('cookie') || '';
+  const result = {};
+  raw.split(';').forEach((part) => {
+    const [name, ...rest] = part.trim().split('=');
+    if (!name) return;
+    result[name] = decodeURIComponent(rest.join('='));
+  });
+  return result;
+}
+
+export function getAdminCookieValue(request) {
+  const cookies = parseCookies(request);
+  return cookies[ADMIN_COOKIE] || '';
+}
+
+export function buildAdminSessionCookie(value, maxAge = 60 * 60 * 12) {
+  return `${ADMIN_COOKIE}=${encodeURIComponent(value)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;
+}
+
+export function clearAdminSessionCookie() {
+  return `${ADMIN_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
+}
+
+export function isAdminAuthenticated(request, env) {
+  if (!env.ADMIN_KEY) return true;
   const token = parseAuth(request);
-  if (!token || token !== env.ADMIN_KEY) return { ok: false };
-  return { ok: true };
+  if (token && token === env.ADMIN_KEY) return true;
+  const cookieToken = getAdminCookieValue(request);
+  return !!cookieToken && cookieToken === env.ADMIN_KEY;
+}
+
+export function requireAdmin(request, env) {
+  if (isAdminAuthenticated(request, env)) return { ok: true };
+  return { ok: false };
 }
 
 export function sanitizeText(value, fallback = '') {
