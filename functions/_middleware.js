@@ -1,35 +1,40 @@
-import { isAdminAuthenticated } from './_utils';
+function htmlRedirect(url, status = 302) {
+  return Response.redirect(url, status);
+}
 
-function redirectToLogin(request) {
-  const url = new URL(request.url);
-  const login = new URL('/admin-login.html', url.origin);
-  login.searchParams.set('returnTo', '/admin');
-  return Response.redirect(login.toString(), 302);
+function jsonUnauthorized() {
+  return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+    status: 401,
+    headers: { 'content-type': 'application/json; charset=utf-8' },
+  });
+}
+
+function hasValidAdminCookie(request) {
+  const cookie = request.headers.get('cookie') || '';
+  return /(?:^|;\s*)admin_auth=1(?:;|$)/.test(cookie);
 }
 
 export async function onRequest(context) {
-  const { request, env, next } = context;
-  const url = new URL(request.url);
+  const url = new URL(context.request.url);
   const path = url.pathname;
+  const authed = hasValidAdminCookie(context.request);
 
-  // Never protect the login page or auth endpoints here.
-  if (
-    path === '/admin-login.html' ||
-    path === '/login.js' ||
-    path === '/styles.css' ||
-    path.startsWith('/api/auth')
-  ) {
-    return next();
+  const isLoginPage = path === '/admin-login.html';
+  const isProtectedPage = path === '/admin.html';
+  const isAuthApi = path === '/api/auth';
+  const isProtectedApi = path.startsWith('/api/') && !isAuthApi;
+
+  if (isLoginPage && authed) {
+    return htmlRedirect(`${url.origin}/admin.html`);
   }
 
-  // Use /admin as the single canonical admin entrypoint.
-  if (path === '/admin.html') {
-    return Response.redirect(new URL('/admin', url.origin).toString(), 302);
+  if (isProtectedPage && !authed) {
+    return htmlRedirect(`${url.origin}/admin-login.html`);
   }
 
-  if (path === '/admin') {
-    if (!isAdminAuthenticated(request, env)) return redirectToLogin(request);
+  if (isProtectedApi && !authed) {
+    return jsonUnauthorized();
   }
 
-  return next();
+  return context.next();
 }
