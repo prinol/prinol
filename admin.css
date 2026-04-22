@@ -119,7 +119,36 @@ body{
 .wide-panel{
   padding:24px;
 }
-
+.manage-toolbar{
+  display:grid;
+  grid-template-columns:minmax(180px, 220px) auto;
+  gap:12px;
+  align-items:end;
+  margin-top:12px;
+}
+.compact-field{
+  gap:6px;
+}
+.compact-field select{
+  width:100%;
+  border:1px solid #343c48;
+  border-radius:14px;
+  background:#0f141c;
+  color:#f5f7fb;
+  padding:12px 14px;
+  font-size:.96rem;
+  line-height:1.4;
+}
+.compact-field select:focus{
+  outline:none;
+  border-color:#7c5cff;
+  box-shadow:0 0 0 3px rgba(124,92,255,.16);
+}
+.compact-toggle{
+  min-height:unset;
+  padding-bottom:3px;
+  justify-content:flex-start;
+}
 .primary-button,
 .ghost-button,
 .danger-button{
@@ -386,5 +415,8 @@ body{
   .span-6,
   .span-4{
     grid-column:span 12;
+  }
+  .manage-toolbar{
+    grid-template-columns:1fr;
   }
 }
