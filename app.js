@@ -1,4 +1,3 @@
-
 const appState = {
   allItems: [],
   filteredItems: [],
@@ -106,6 +105,15 @@ function makeCard(item) {
   image.src = item.image_url || `/images/${item.image_key}`;
   image.alt = item.title || 'Artwork';
   image.loading = 'lazy';
+
+  if (Number(item.is_pinned || 0) === 1) {
+    const pin = document.createElement('span');
+    pin.className = 'pinned-badge';
+    pin.setAttribute('aria-label', '고정된 작품');
+    pin.title = '고정된 작품';
+    pin.textContent = '★';
+    link.appendChild(pin);
+  }
 
   const overlay = document.createElement('div');
   overlay.className = 'work-card-overlay';
