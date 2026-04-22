@@ -11,8 +11,8 @@
     <div class="container nav-row">
       <a class="brand" href="./" id="brandText">PRINOL</a>
       <nav class="nav-links">
-        <a href="#about">About</a>
         <a href="#works">Works</a>
+        <a href="#about">About</a>
         <a href="admin-login.html">Admin</a>
       </nav>
     </div>
@@ -56,8 +56,10 @@
             </select>
           </div>
         </div>
-        <div class="gallery" id="gallery"></div>
+
+        <div class="thumb-grid" id="gallery"></div>
         <p class="empty-state hidden" id="emptyState">표시할 공개 작품이 없습니다.</p>
+        <div class="load-sentinel" id="loadSentinel" aria-hidden="true"></div>
       </div>
     </section>
 
@@ -85,19 +87,20 @@
   </main>
 
   <template id="artworkCardTemplate">
-    <article class="artwork-card">
-      <div class="artwork-image-wrap">
-        <img class="artwork-image" alt="">
-      </div>
-      <div class="artwork-meta">
-        <div class="artwork-topline">
-          <h3 class="artwork-title"></h3>
-          <span class="artwork-year"></span>
+    <article class="thumb-card">
+      <a class="thumb-link">
+        <div class="thumb-image-wrap">
+          <img class="thumb-image" alt="">
         </div>
-        <p class="artwork-category"></p>
-        <p class="artwork-description"></p>
-        <p class="artwork-tags"></p>
-      </div>
+        <div class="thumb-meta">
+          <div class="thumb-topline">
+            <h3 class="thumb-title"></h3>
+            <span class="thumb-year"></span>
+          </div>
+          <p class="thumb-category"></p>
+          <div class="thumb-tags"></div>
+        </div>
+      </a>
     </article>
   </template>
 

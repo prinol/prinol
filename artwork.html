@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Artwork | PRINOL</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav-row">
+      <a class="brand" href="./">PRINOL</a>
+      <nav class="nav-links">
+        <a href="./#works">Works</a>
+        <a href="./#about">About</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="section">
+    <div class="container">
+      <a class="back-link" href="./#works">← 공개 작품으로 돌아가기</a>
+
+      <article class="detail-card hidden" id="detailCard">
+        <div class="detail-grid">
+          <div class="detail-image-wrap">
+            <img id="detailImage" class="detail-image" alt="">
+          </div>
+          <div class="detail-content">
+            <p class="eyebrow">DETAIL</p>
+            <h1 id="detailTitle">작품 제목</h1>
+            <div class="detail-meta-row">
+              <span id="detailYear" class="detail-year"></span>
+              <span id="detailCategory" class="detail-category"></span>
+            </div>
+            <p id="detailDescription" class="detail-description"></p>
+            <div id="detailTags" class="detail-tags"></div>
+          </div>
+        </div>
+      </article>
+
+      <p id="detailError" class="empty-state hidden">작품을 불러올 수 없습니다.</p>
+    </div>
+  </main>
+
+  <script src="artwork.js" defer></script>
+</body>
+</html>

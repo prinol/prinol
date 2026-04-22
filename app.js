@@ -1,12 +1,17 @@
+const PAGE_SIZE = 12;
+
 const state = {
   artworks: [],
   filtered: [],
+  visibleCount: 0,
+  observer: null,
   profile: null,
 };
 
 const els = {
   gallery: document.getElementById('gallery'),
   emptyState: document.getElementById('emptyState'),
+  loadSentinel: document.getElementById('loadSentinel'),
   searchInput: document.getElementById('searchInput'),
   yearFilter: document.getElementById('yearFilter'),
   categoryFilter: document.getElementById('categoryFilter'),
@@ -22,6 +27,15 @@ const els = {
   template: document.getElementById('artworkCardTemplate'),
 };
 
+const TAG_CLASSES = [
+  'tag-chip color-1',
+  'tag-chip color-2',
+  'tag-chip color-3',
+  'tag-chip color-4',
+  'tag-chip color-5',
+  'tag-chip color-6',
+];
+
 function escapeHtml(value = '') {
   return String(value)
     .replaceAll('&', '&amp;')
@@ -34,53 +48,45 @@ function escapeHtml(value = '') {
 function splitAwards(value) {
   if (!value) return [];
   if (Array.isArray(value)) return value.map(v => String(v).trim()).filter(Boolean);
-  return String(value)
-    .split(/\r?\n/)
-    .map(v => v.trim())
-    .filter(Boolean);
+  return String(value).split(/\r?\n/).map(v => v.trim()).filter(Boolean);
+}
+
+function splitTags(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.map(v => String(v).trim()).filter(Boolean);
+  return String(value).split(',').map(v => v.trim()).filter(Boolean);
 }
 
 function normalizeProfile(raw) {
   const data = raw?.profile ?? raw?.item ?? raw?.data ?? raw ?? {};
   return {
-    heroTitle:
-      data.heroTitle ??
-      data.hero_title ??
-      'PRINOL',
-    heroSubtitle:
-      data.heroSubtitle ??
-      data.hero_subtitle ??
-      data.subtitle ??
-      'Personal Artwork Portfolio',
-    aboutTitle:
-      data.aboutTitle ??
-      data.about_title ??
-      '작가 소개',
-    aboutBody:
-      data.aboutBody ??
-      data.about_body ??
-      data.bio ??
-      '작가 소개 문장을 입력하세요.',
-    awards:
-      splitAwards(
-        data.awards ??
-        data.awards_text ??
-        data.awardText ??
-        data.award_text ??
-        ''
-      ),
-    email:
-      data.email ??
-      data.contactEmail ??
-      data.contact_email ??
-      '',
+    heroTitle: data.heroTitle ?? data.hero_title ?? 'PRINOL',
+    heroSubtitle: data.heroSubtitle ?? data.hero_subtitle ?? data.subtitle ?? 'Personal Artwork Portfolio',
+    aboutTitle: data.aboutTitle ?? data.about_title ?? '작가 소개',
+    aboutBody: data.aboutBody ?? data.about_body ?? data.bio ?? '작가 소개 문장을 입력하세요.',
+    awards: splitAwards(data.awards ?? data.awards_text ?? data.awardText ?? data.award_text ?? ''),
+    email: data.email ?? data.contactEmail ?? data.contact_email ?? '',
   };
+}
+
+function toTimestamp(item) {
+  const candidates = [item.updated_at, item.created_at, item.createdAt, item.id];
+  for (const value of candidates) {
+    if (!value) continue;
+    const time = new Date(value).getTime();
+    if (!Number.isNaN(time) && time > 0) return time;
+    const num = Number(value);
+    if (!Number.isNaN(num)) return num;
+  }
+  return 0;
 }
 
 function normalizeArtworks(raw) {
   const items = raw?.items ?? raw?.artworks ?? raw?.data ?? [];
   if (!Array.isArray(items)) return [];
-  return items.filter(item => item && item.is_public !== 0 && item.is_public !== false);
+  return items
+    .filter(item => item && item.is_public !== 0 && item.is_public !== false)
+    .sort((a, b) => toTimestamp(b) - toTimestamp(a));
 }
 
 function renderProfile() {
@@ -148,6 +154,10 @@ function renderFilterOptions() {
   }
 }
 
+function resetVisibleCount() {
+  state.visibleCount = Math.min(PAGE_SIZE, state.filtered.length);
+}
+
 function applyFilters() {
   const keyword = (els.searchInput?.value || '').trim().toLowerCase();
   const category = els.categoryFilter?.value || '';
@@ -168,28 +178,43 @@ function applyFilters() {
     return matchesCategory && matchesYear && matchesKeyword;
   });
 
+  resetVisibleCount();
   renderGallery();
+  updateSentinel();
+}
+
+function renderTags(container, tags) {
+  container.innerHTML = '';
+  tags.forEach((tag, index) => {
+    const span = document.createElement('span');
+    span.className = TAG_CLASSES[index % TAG_CLASSES.length];
+    span.textContent = tag;
+    container.appendChild(span);
+  });
 }
 
 function renderGallery() {
   if (!els.gallery || !els.template) return;
   els.gallery.innerHTML = '';
 
-  if (!state.filtered.length) {
+  const visibleItems = state.filtered.slice(0, state.visibleCount);
+
+  if (!visibleItems.length) {
     els.emptyState?.classList.remove('hidden');
   } else {
     els.emptyState?.classList.add('hidden');
   }
 
-  state.filtered.forEach(item => {
+  visibleItems.forEach(item => {
     const node = els.template.content.firstElementChild.cloneNode(true);
-    const img = node.querySelector('.artwork-image');
-    const title = node.querySelector('.artwork-title');
-    const year = node.querySelector('.artwork-year');
-    const category = node.querySelector('.artwork-category');
-    const description = node.querySelector('.artwork-description');
-    const tags = node.querySelector('.artwork-tags');
+    const link = node.querySelector('.thumb-link');
+    const img = node.querySelector('.thumb-image');
+    const title = node.querySelector('.thumb-title');
+    const year = node.querySelector('.thumb-year');
+    const category = node.querySelector('.thumb-category');
+    const tagsWrap = node.querySelector('.thumb-tags');
 
+    if (link) link.href = `artwork.html?id=${encodeURIComponent(item.id)}`;
     if (img) {
       img.src = item.image_url || `/images/${item.image_key}`;
       img.alt = item.title || 'Artwork';
@@ -198,13 +223,7 @@ function renderGallery() {
     if (title) title.textContent = item.title || '';
     if (year) year.textContent = item.year || '';
     if (category) category.textContent = item.category || '';
-    if (description) description.textContent = item.description || '';
-    if (tags) {
-      const text = item.tags
-        ? String(item.tags).split(',').map(v => v.trim()).filter(Boolean).map(v => `#${v}`).join(' ')
-        : '';
-      tags.textContent = text;
-    }
+    if (tagsWrap) renderTags(tagsWrap, splitTags(item.tags));
 
     els.gallery.appendChild(node);
   });
@@ -214,6 +233,31 @@ function renderGallery() {
     const count = new Set(state.artworks.map(item => item.category).filter(Boolean)).size;
     els.categoryCount.textContent = String(count);
   }
+}
+
+function loadMore() {
+  if (state.visibleCount >= state.filtered.length) return;
+  state.visibleCount = Math.min(state.visibleCount + PAGE_SIZE, state.filtered.length);
+  renderGallery();
+  updateSentinel();
+}
+
+function updateSentinel() {
+  if (!els.loadSentinel) return;
+  els.loadSentinel.style.display = state.visibleCount < state.filtered.length ? 'block' : 'none';
+}
+
+function setupInfiniteScroll() {
+  if (!els.loadSentinel) return;
+  if (state.observer) state.observer.disconnect();
+
+  state.observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) loadMore();
+    });
+  }, { rootMargin: '300px 0px' });
+
+  state.observer.observe(els.loadSentinel);
 }
 
 async function fetchJson(url) {
@@ -263,6 +307,7 @@ function bindEvents() {
 
 async function init() {
   bindEvents();
+  setupInfiniteScroll();
   await Promise.all([loadProfile(), loadArtworks()]);
 }
 
