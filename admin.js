@@ -21,7 +21,7 @@ async function fetchJson(url, options = {}) {
       location.href = '/admin-login.html';
       throw new Error('인증이 필요합니다.');
     }
-    throw new Error(data.error || '요청에 실패했습니다.');
+    throw new Error(data.detail ? `${data.error || '요청에 실패했습니다.'} (${data.detail})` : (data.error || '요청에 실패했습니다.'));
   }
   return data;
 }
@@ -37,7 +37,7 @@ function parseTags(text = '') {
 
 async function loadProfile() {
   const data = await fetchJson('/api/profile?admin=1');
-  const profile = data.profile;
+  const profile = data.profile || {};
   document.getElementById('heroTitleInput').value = profile.hero_title || '';
   document.getElementById('heroSubtitleInput').value = profile.hero_subtitle || '';
   document.getElementById('aboutTitleInput').value = profile.about_title || '';
@@ -106,6 +106,7 @@ async function loadArtworks() {
 
 profileForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
+  setText(profileStatus, '저장 중...');
   try {
     await fetchJson('/api/profile', {
       method: 'POST',
