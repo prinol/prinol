@@ -4,6 +4,12 @@ const adminEls = {
   adminKey: document.getElementById('adminKey'),
   saveAdminKey: document.getElementById('saveAdminKey'),
   clearAdminKey: document.getElementById('clearAdminKey'),
+  profileForm: document.getElementById('profileForm'),
+  artistIntro: document.getElementById('artistIntro'),
+  awardsText: document.getElementById('awardsText'),
+  contactEmail: document.getElementById('contactEmail'),
+  contactInstagram: document.getElementById('contactInstagram'),
+  profileStatus: document.getElementById('profileStatus'),
   uploadForm: document.getElementById('uploadForm'),
   uploadStatus: document.getElementById('uploadStatus'),
   adminList: document.getElementById('adminList'),
@@ -14,9 +20,9 @@ function getAdminKey() {
   return localStorage.getItem(ADMIN_KEY_STORAGE) || '';
 }
 
-function setStatus(message, isError = false) {
-  adminEls.uploadStatus.textContent = message;
-  adminEls.uploadStatus.style.color = isError ? 'var(--danger)' : 'var(--muted)';
+function setStatus(target, message, isError = false) {
+  target.textContent = message;
+  target.style.color = isError ? 'var(--danger)' : 'var(--muted)';
 }
 
 function authHeaders(json = false) {
@@ -29,6 +35,22 @@ function authHeaders(json = false) {
 
 function fillSavedKey() {
   adminEls.adminKey.value = getAdminKey();
+}
+
+async function loadProfile() {
+  const response = await fetch('/api/profile?admin=1', { headers: authHeaders() });
+  const data = await response.json();
+
+  if (!response.ok) {
+    setStatus(adminEls.profileStatus, data.error || '소개 정보를 불러오지 못했습니다.', true);
+    return;
+  }
+
+  adminEls.artistIntro.value = data.artist_intro || '';
+  adminEls.awardsText.value = data.awards_text || '';
+  adminEls.contactEmail.value = data.contact_email || '';
+  adminEls.contactInstagram.value = data.contact_instagram || '';
+  setStatus(adminEls.profileStatus, '소개 정보 불러옴');
 }
 
 async function loadAdminList() {
@@ -96,22 +118,52 @@ function createAdminItem(item) {
   return wrapper;
 }
 
-adminEls.saveAdminKey.addEventListener('click', () => {
+adminEls.saveAdminKey.addEventListener('click', async () => {
   localStorage.setItem(ADMIN_KEY_STORAGE, adminEls.adminKey.value.trim());
-  setStatus('관리자 키 저장됨');
-  loadAdminList().catch((error) => setStatus(error.message, true));
+  setStatus(adminEls.uploadStatus, '관리자 키 저장됨');
+  await Promise.allSettled([
+    loadAdminList(),
+    loadProfile(),
+  ]);
 });
 
-adminEls.clearAdminKey.addEventListener('click', () => {
+adminEls.clearAdminKey.addEventListener('click', async () => {
   localStorage.removeItem(ADMIN_KEY_STORAGE);
   adminEls.adminKey.value = '';
-  setStatus('관리자 키 삭제됨');
-  loadAdminList().catch((error) => setStatus(error.message, true));
+  setStatus(adminEls.uploadStatus, '관리자 키 삭제됨');
+  await Promise.allSettled([
+    loadAdminList(),
+    loadProfile(),
+  ]);
+});
+
+adminEls.profileForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  setStatus(adminEls.profileStatus, '소개 저장 중...');
+
+  const response = await fetch('/api/profile', {
+    method: 'POST',
+    headers: authHeaders(true),
+    body: JSON.stringify({
+      artist_intro: adminEls.artistIntro.value,
+      awards_text: adminEls.awardsText.value,
+      contact_email: adminEls.contactEmail.value,
+      contact_instagram: adminEls.contactInstagram.value,
+    }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    setStatus(adminEls.profileStatus, data.error || '소개 저장 실패', true);
+    return;
+  }
+
+  setStatus(adminEls.profileStatus, '소개 저장 완료');
 });
 
 adminEls.uploadForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-  setStatus('업로드 중...');
+  setStatus(adminEls.uploadStatus, '업로드 중...');
   const formData = new FormData(adminEls.uploadForm);
   formData.set('isPublic', document.getElementById('isPublic').checked ? 'true' : 'false');
 
@@ -123,18 +175,18 @@ adminEls.uploadForm.addEventListener('submit', async (event) => {
 
   const data = await response.json();
   if (!response.ok) {
-    setStatus(data.error || '업로드 실패', true);
+    setStatus(adminEls.uploadStatus, data.error || '업로드 실패', true);
     return;
   }
 
-  setStatus('업로드 완료');
+  setStatus(adminEls.uploadStatus, '업로드 완료');
   adminEls.uploadForm.reset();
   document.getElementById('isPublic').checked = true;
   await loadAdminList();
 });
 
 adminEls.refreshAdminList.addEventListener('click', () => {
-  loadAdminList().catch((error) => setStatus(error.message, true));
+  loadAdminList().catch((error) => setStatus(adminEls.uploadStatus, error.message, true));
 });
 
 function escapeHtml(value) {
@@ -147,4 +199,5 @@ function escapeHtml(value) {
 }
 
 fillSavedKey();
-loadAdminList().catch((error) => setStatus(error.message, true));
+loadProfile().catch((error) => setStatus(adminEls.profileStatus, error.message, true));
+loadAdminList().catch((error) => setStatus(adminEls.uploadStatus, error.message, true));

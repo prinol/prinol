@@ -42,6 +42,38 @@
     <section class="panel">
       <div class="panel-header">
         <div>
+          <p class="eyebrow">Artist Profile</p>
+          <h2>작가 소개 · 수상 이력 관리</h2>
+        </div>
+        <div id="profileStatus" class="status-pill">대기중</div>
+      </div>
+
+      <form id="profileForm" class="form-grid">
+        <div class="field full">
+          <label for="artistIntro">작가 소개 문장</label>
+          <textarea id="artistIntro" name="artistIntro" rows="4" placeholder="작업 세계, 재료, 관심 주제 등을 한두 문단으로 작성"></textarea>
+        </div>
+        <div class="field full">
+          <label for="awardsText">문장형 수상 이력</label>
+          <textarea id="awardsText" name="awardsText" rows="4" placeholder="예: 2024년 ○○미술대전 대상, 2025년 △△청년작가상 수상 등 주요 이력을 문장형으로 작성"></textarea>
+        </div>
+        <div class="field">
+          <label for="contactEmail">이메일</label>
+          <input id="contactEmail" name="contactEmail" type="email" placeholder="yourname@example.com" />
+        </div>
+        <div class="field">
+          <label for="contactInstagram">인스타그램</label>
+          <input id="contactInstagram" name="contactInstagram" placeholder="@yourhandle" />
+        </div>
+        <div class="full inline-actions">
+          <button class="btn" type="submit">소개 저장</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <div>
           <p class="eyebrow">Upload</p>
           <h2>새 작품 등록</h2>
         </div>

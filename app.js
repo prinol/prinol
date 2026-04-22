@@ -1,6 +1,7 @@
 const state = {
   artworks: [],
   filtered: [],
+  profile: null,
 };
 
 const els = {
@@ -17,14 +18,49 @@ const els = {
   lightboxTitle: document.getElementById('lightboxTitle'),
   lightboxDescription: document.getElementById('lightboxDescription'),
   closeLightbox: document.getElementById('closeLightbox'),
+  artistIntroText: document.getElementById('artistIntroText'),
+  awardsText: document.getElementById('awardsText'),
+  contactEmailText: document.getElementById('contactEmailText'),
+  contactInstagramText: document.getElementById('contactInstagramText'),
 };
 
-async function fetchArtworks() {
-  const response = await fetch('/api/artworks');
-  if (!response.ok) throw new Error('작품 목록을 불러오지 못했습니다.');
-  state.artworks = await response.json();
+async function fetchData() {
+  const [artworksResponse, profileResponse] = await Promise.all([
+    fetch('/api/artworks'),
+    fetch('/api/profile'),
+  ]);
+
+  if (!artworksResponse.ok) throw new Error('작품 목록을 불러오지 못했습니다.');
+  if (!profileResponse.ok) throw new Error('작가 소개를 불러오지 못했습니다.');
+
+  state.artworks = await artworksResponse.json();
+  state.profile = await profileResponse.json();
+
   fillFilters();
+  renderProfile();
   applyFilters();
+}
+
+function renderProfile() {
+  const profile = state.profile || {};
+  if (profile.artist_intro) {
+    els.artistIntroText.textContent = profile.artist_intro;
+  }
+
+  if (profile.awards_text) {
+    els.awardsText.textContent = profile.awards_text;
+    els.awardsText.classList.remove('hidden');
+  } else {
+    els.awardsText.classList.add('hidden');
+  }
+
+  if (profile.contact_email) {
+    els.contactEmailText.textContent = `Email: ${profile.contact_email}`;
+  }
+
+  if (profile.contact_instagram) {
+    els.contactInstagramText.textContent = `Instagram: ${profile.contact_instagram}`;
+  }
 }
 
 function fillFilters() {
@@ -115,7 +151,7 @@ els.lightbox.addEventListener('click', (event) => {
   if (!clickedInDialog) els.lightbox.close();
 });
 
-fetchArtworks().catch((error) => {
+fetchData().catch((error) => {
   console.error(error);
   els.emptyState.textContent = error.message;
   els.emptyState.classList.remove('hidden');

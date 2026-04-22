@@ -131,3 +131,11 @@ input:focus, select:focus, textarea:focus { border-color: rgba(141,177,255,0.7);
   .admin-item { grid-template-columns: 1fr; }
   .admin-thumb { width: 100%; height: auto; aspect-ratio: 4/3; }
 }
+
+
+.awards-text {
+  margin-top: 1rem;
+  padding-left: 1rem;
+  border-left: 2px solid rgba(255,255,255,.16);
+  color: var(--text);
+}
