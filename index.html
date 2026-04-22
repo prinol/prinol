@@ -8,101 +8,71 @@
 </head>
 <body>
   <header class="site-header">
-    <div class="container nav-row">
-      <a class="brand" href="./" id="brandText">PRINOL</a>
-      <nav class="nav-links">
+    <div class="header-inner">
+      <a class="site-logo" href="./">PRINOL</a>
+      <nav class="site-nav">
         <a href="#works">Works</a>
         <a href="#about">About</a>
-        <a href="admin-login.html">Admin</a>
+        <a href="admin.html">Admin</a>
       </nav>
     </div>
   </header>
 
   <main>
-    <section class="hero">
-      <div class="container hero-grid">
-        <div>
-          <p class="eyebrow">ART PORTFOLIO</p>
-          <h1 id="heroTitle">PRINOL</h1>
-          <p class="hero-subtitle" id="heroSubtitle">Personal Artwork Portfolio</p>
-        </div>
-        <div class="hero-stats compact-stats">
-          <div class="stat-card">
-            <span class="stat-label">공개 작품수</span>
-            <strong class="stat-value" id="publicCount">0</strong>
+    <section class="hero-section">
+      <div class="hero-inner">
+        <p class="hero-kicker">ART PORTFOLIO</p>
+        <h1 id="heroTitle">Selected Works</h1>
+        <p id="heroSubtitle" class="hero-subtitle">PRINOL ART PORTFOLIO</p>
+
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <span class="hero-stat-label">공개작품수</span>
+            <strong id="publicCount">0</strong>
           </div>
-          <div class="stat-card">
-            <span class="stat-label">카테고리 수</span>
-            <strong class="stat-value" id="categoryCount">0</strong>
+          <div class="hero-stat">
+            <span class="hero-stat-label">카테고리 수</span>
+            <strong id="categoryCount" data-current="0">0</strong>
           </div>
         </div>
       </div>
     </section>
 
-    <section id="works" class="section works-section">
-      <div class="container">
-        <div class="section-head">
-          <div>
-            <p class="eyebrow">WORKS</p>
-            <h2>공개 작품</h2>
-          </div>
-          <div class="filters">
-            <input id="searchInput" type="search" placeholder="작품 검색">
-            <select id="yearFilter">
-              <option value="">전체 연도</option>
-            </select>
-            <select id="categoryFilter">
-              <option value="">전체 카테고리</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="thumb-grid" id="gallery"></div>
-        <p class="empty-state hidden" id="emptyState">표시할 공개 작품이 없습니다.</p>
-        <div class="load-sentinel" id="loadSentinel" aria-hidden="true"></div>
+    <section id="works" class="works-section">
+      <div class="section-head">
+        <h2>Works</h2>
       </div>
+
+      <div id="worksGrid" class="works-grid" aria-live="polite"></div>
+      <p id="worksEmpty" class="empty-message" hidden>등록된 공개 작품이 없습니다.</p>
+      <p id="worksLoading" class="loading-message" hidden>작품을 불러오는 중...</p>
+      <div id="scrollSentinel" class="scroll-sentinel" aria-hidden="true"></div>
     </section>
 
-    <section id="about" class="section">
-      <div class="container two-col">
-        <div class="card">
-          <p class="eyebrow">ABOUT</p>
-          <h2 id="aboutTitle">작가 소개</h2>
-          <p class="body-copy" id="aboutBody">작가 소개 문장을 입력하세요.</p>
+    <section id="about" class="about-section">
+      <div class="section-head">
+        <h2 id="aboutTitle">About</h2>
+      </div>
 
-          <div style="height: 1.2rem;"></div>
+      <div class="about-layout">
+        <div class="about-copy">
+          <p id="aboutBody"></p>
+        </div>
 
-          <div class="contact-inline">
-            <span class="contact-label">Email</span>
-            <a id="contactEmail" href="#">-</a>
+        <aside class="about-side">
+          <div class="info-card">
+            <h3>Awards</h3>
+            <ul id="awardsList" class="awards-list"></ul>
+
+            <div class="email-block">
+              <p>Email</p>
+              <a id="emailLink"></a>
+            </div>
           </div>
-        </div>
-        <div class="card">
-          <p class="eyebrow">AWARDS</p>
-          <h2>수상 이력</h2>
-          <ul class="bullet-list" id="awardsList"></ul>
-        </div>
+        </aside>
       </div>
     </section>
   </main>
-
-  <template id="artworkCardTemplate">
-    <article class="thumb-card">
-      <a class="thumb-link">
-        <div class="thumb-image-wrap">
-          <img class="thumb-image" alt="">
-        </div>
-        <div class="thumb-meta">
-          <div class="thumb-topline">
-            <h3 class="thumb-title"></h3>
-            <span class="thumb-year"></span>
-          </div>
-          <p class="thumb-category"></p>
-          <div class="thumb-tags"></div>
-        </div>
-      </a>
-    </article>
-  </template>
 
   <script src="app.js" defer></script>
 </body>
