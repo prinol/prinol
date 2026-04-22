@@ -1,40 +1,32 @@
-function htmlRedirect(url, status = 302) {
-  return Response.redirect(url, status);
-}
+import { isAuthorized } from './_utils.js';
 
-function jsonUnauthorized() {
-  return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-    status: 401,
-    headers: { 'content-type': 'application/json; charset=utf-8' },
-  });
-}
-
-function hasValidAdminCookie(request) {
-  const cookie = request.headers.get('cookie') || '';
-  return /(?:^|;\s*)admin_auth=1(?:;|$)/.test(cookie);
+function redirect(location, status = 302) {
+  return Response.redirect(location, status);
 }
 
 export async function onRequest(context) {
-  const url = new URL(context.request.url);
+  const { request, env, next } = context;
+  const url = new URL(request.url);
   const path = url.pathname;
-  const authed = hasValidAdminCookie(context.request);
 
-  const isLoginPage = path === '/admin-login.html';
-  const isProtectedPage = path === '/admin.html';
-  const isAuthApi = path === '/api/auth';
-  const isProtectedApi = path.startsWith('/api/') && !isAuthApi;
+  const protectAdminPage = path === '/admin.html';
+  const protectWriteApis = [
+    '/api/upload',
+    '/api/update',
+    '/api/delete'
+  ].includes(path) || (path === '/api/profile' && request.method !== 'GET');
 
-  if (isLoginPage && authed) {
-    return htmlRedirect(`${url.origin}/admin.html`);
+  if (protectAdminPage || protectWriteApis) {
+    if (!isAuthorized(request, env)) {
+      if (protectAdminPage) {
+        return redirect(`${url.origin}/admin-login.html`);
+      }
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'content-type': 'application/json; charset=utf-8' }
+      });
+    }
   }
 
-  if (isProtectedPage && !authed) {
-    return htmlRedirect(`${url.origin}/admin-login.html`);
-  }
-
-  if (isProtectedApi && !authed) {
-    return jsonUnauthorized();
-  }
-
-  return context.next();
+  return next();
 }
