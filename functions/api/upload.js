@@ -57,7 +57,8 @@ export async function onRequestPost(context) {
     );
 
     const id = uuid();
-    const imageKey = `artworks/${id}${ext}`;
+    // 슬래시가 포함된 키에서 라우팅 문제가 발생하지 않도록 단일 파일명 사용
+    const imageKey = `${id}${ext}`;
     const bytes = await file.arrayBuffer();
 
     await env.ART_BUCKET.put(imageKey, bytes, {
