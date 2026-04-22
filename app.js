@@ -8,6 +8,7 @@ const els = {
   gallery: document.getElementById('gallery'),
   emptyState: document.getElementById('emptyState'),
   searchInput: document.getElementById('searchInput'),
+  yearFilter: document.getElementById('yearFilter'),
   categoryFilter: document.getElementById('categoryFilter'),
   publicCount: document.getElementById('publicCount'),
   categoryCount: document.getElementById('categoryCount'),
@@ -42,7 +43,10 @@ function splitAwards(value) {
 function normalizeProfile(raw) {
   const data = raw?.profile ?? raw?.item ?? raw?.data ?? raw ?? {};
   return {
-    heroTitle: 'PRINOL',
+    heroTitle:
+      data.heroTitle ??
+      data.hero_title ??
+      'PRINOL',
     heroSubtitle:
       data.heroSubtitle ??
       data.hero_subtitle ??
@@ -82,7 +86,7 @@ function normalizeArtworks(raw) {
 function renderProfile() {
   const p = state.profile || normalizeProfile({});
   if (els.brandText) els.brandText.textContent = 'PRINOL';
-  if (els.heroTitle) els.heroTitle.textContent = p.heroTitle;
+  if (els.heroTitle) els.heroTitle.textContent = p.heroTitle || 'PRINOL';
   if (els.heroSubtitle) els.heroSubtitle.textContent = p.heroSubtitle || 'Personal Artwork Portfolio';
   if (els.aboutTitle) els.aboutTitle.textContent = p.aboutTitle || '작가 소개';
   if (els.aboutBody) els.aboutBody.innerHTML = escapeHtml(p.aboutBody || '').replace(/\n/g, '<br>');
@@ -116,25 +120,43 @@ function renderProfile() {
 }
 
 function renderFilterOptions() {
-  if (!els.categoryFilter) return;
-  const current = els.categoryFilter.value;
-  const categories = [...new Set(state.artworks.map(item => item.category).filter(Boolean))];
-  els.categoryFilter.innerHTML = '<option value="">전체 카테고리</option>';
-  categories.forEach(category => {
-    const option = document.createElement('option');
-    option.value = category;
-    option.textContent = category;
-    els.categoryFilter.appendChild(option);
-  });
-  els.categoryFilter.value = current;
+  if (els.categoryFilter) {
+    const currentCategory = els.categoryFilter.value;
+    const categories = [...new Set(state.artworks.map(item => item.category).filter(Boolean))];
+    els.categoryFilter.innerHTML = '<option value="">전체 카테고리</option>';
+    categories.forEach(category => {
+      const option = document.createElement('option');
+      option.value = category;
+      option.textContent = category;
+      els.categoryFilter.appendChild(option);
+    });
+    els.categoryFilter.value = currentCategory;
+  }
+
+  if (els.yearFilter) {
+    const currentYear = els.yearFilter.value;
+    const years = [...new Set(state.artworks.map(item => String(item.year || '').trim()).filter(Boolean))]
+      .sort((a, b) => Number(b) - Number(a) || String(b).localeCompare(String(a)));
+    els.yearFilter.innerHTML = '<option value="">전체 연도</option>';
+    years.forEach(year => {
+      const option = document.createElement('option');
+      option.value = year;
+      option.textContent = year;
+      els.yearFilter.appendChild(option);
+    });
+    els.yearFilter.value = currentYear;
+  }
 }
 
 function applyFilters() {
   const keyword = (els.searchInput?.value || '').trim().toLowerCase();
   const category = els.categoryFilter?.value || '';
+  const year = els.yearFilter?.value || '';
 
   state.filtered = state.artworks.filter(item => {
+    const itemYear = String(item.year || '').trim();
     const matchesCategory = !category || item.category === category;
+    const matchesYear = !year || itemYear === year;
     const haystack = [
       item.title,
       item.description,
@@ -143,7 +165,7 @@ function applyFilters() {
       item.year,
     ].join(' ').toLowerCase();
     const matchesKeyword = !keyword || haystack.includes(keyword);
-    return matchesCategory && matchesKeyword;
+    return matchesCategory && matchesYear && matchesKeyword;
   });
 
   renderGallery();
@@ -195,7 +217,7 @@ function renderGallery() {
 }
 
 async function fetchJson(url) {
-  const res = await fetch(url, { headers: { 'accept': 'application/json' } });
+  const res = await fetch(url, { headers: { accept: 'application/json' } });
   const text = await res.text();
   let data;
   try {
@@ -236,6 +258,7 @@ async function loadArtworks() {
 function bindEvents() {
   els.searchInput?.addEventListener('input', applyFilters);
   els.categoryFilter?.addEventListener('change', applyFilters);
+  els.yearFilter?.addEventListener('change', applyFilters);
 }
 
 async function init() {
