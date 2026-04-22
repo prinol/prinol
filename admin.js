@@ -1,9 +1,6 @@
-const ADMIN_KEY_STORAGE = 'artfolio_admin_key';
-
 const adminEls = {
-  adminKey: document.getElementById('adminKey'),
-  saveAdminKey: document.getElementById('saveAdminKey'),
-  clearAdminKey: document.getElementById('clearAdminKey'),
+  logoutButton: document.getElementById('logoutButton'),
+  adminStatus: document.getElementById('adminStatus'),
   profileForm: document.getElementById('profileForm'),
   artistIntro: document.getElementById('artistIntro'),
   awardsText: document.getElementById('awardsText'),
@@ -16,29 +13,31 @@ const adminEls = {
   refreshAdminList: document.getElementById('refreshAdminList'),
 };
 
-function getAdminKey() {
-  return localStorage.getItem(ADMIN_KEY_STORAGE) || '';
-}
-
 function setStatus(target, message, isError = false) {
   target.textContent = message;
   target.style.color = isError ? 'var(--danger)' : 'var(--muted)';
 }
 
-function authHeaders(json = false) {
-  const key = getAdminKey();
-  return {
-    ...(key ? { Authorization: `Bearer ${key}` } : {}),
-    ...(json ? { 'Content-Type': 'application/json' } : {}),
-  };
-}
+async function apiFetch(url, options = {}) {
+  const response = await fetch(url, {
+    credentials: 'same-origin',
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+    },
+  });
 
-function fillSavedKey() {
-  adminEls.adminKey.value = getAdminKey();
+  if (response.status === 401) {
+    const next = encodeURIComponent(window.location.pathname);
+    window.location.href = `/admin-login.html?returnTo=${next}`;
+    throw new Error('관리자 인증이 만료되었습니다. 다시 로그인하세요.');
+  }
+
+  return response;
 }
 
 async function loadProfile() {
-  const response = await fetch('/api/profile?admin=1', { headers: authHeaders() });
+  const response = await apiFetch('/api/profile?admin=1');
   const data = await response.json();
 
   if (!response.ok) {
@@ -55,7 +54,7 @@ async function loadProfile() {
 
 async function loadAdminList() {
   adminEls.adminList.innerHTML = '<div class="meta">불러오는 중...</div>';
-  const response = await fetch('/api/artworks?all=1', { headers: authHeaders() });
+  const response = await apiFetch('/api/artworks?all=1');
   const data = await response.json();
 
   if (!response.ok) {
@@ -92,9 +91,9 @@ function createAdminItem(item) {
   `;
 
   wrapper.querySelector('.toggle-btn').addEventListener('click', async () => {
-    const response = await fetch('/api/update', {
+    const response = await apiFetch('/api/update', {
       method: 'POST',
-      headers: authHeaders(true),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: item.id, is_public: !item.is_public }),
     });
     const data = await response.json();
@@ -105,9 +104,9 @@ function createAdminItem(item) {
   wrapper.querySelector('.delete-btn').addEventListener('click', async () => {
     const ok = confirm(`'${item.title}' 작품을 삭제할까요?`);
     if (!ok) return;
-    const response = await fetch('/api/delete', {
+    const response = await apiFetch('/api/delete', {
       method: 'POST',
-      headers: authHeaders(true),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: item.id }),
     });
     const data = await response.json();
@@ -118,32 +117,18 @@ function createAdminItem(item) {
   return wrapper;
 }
 
-adminEls.saveAdminKey.addEventListener('click', async () => {
-  localStorage.setItem(ADMIN_KEY_STORAGE, adminEls.adminKey.value.trim());
-  setStatus(adminEls.uploadStatus, '관리자 키 저장됨');
-  await Promise.allSettled([
-    loadAdminList(),
-    loadProfile(),
-  ]);
-});
-
-adminEls.clearAdminKey.addEventListener('click', async () => {
-  localStorage.removeItem(ADMIN_KEY_STORAGE);
-  adminEls.adminKey.value = '';
-  setStatus(adminEls.uploadStatus, '관리자 키 삭제됨');
-  await Promise.allSettled([
-    loadAdminList(),
-    loadProfile(),
-  ]);
+adminEls.logoutButton.addEventListener('click', async () => {
+  await fetch('/api/auth', { method: 'DELETE', credentials: 'same-origin' });
+  window.location.href = '/admin-login.html';
 });
 
 adminEls.profileForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   setStatus(adminEls.profileStatus, '소개 저장 중...');
 
-  const response = await fetch('/api/profile', {
+  const response = await apiFetch('/api/profile', {
     method: 'POST',
-    headers: authHeaders(true),
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       artist_intro: adminEls.artistIntro.value,
       awards_text: adminEls.awardsText.value,
@@ -167,9 +152,8 @@ adminEls.uploadForm.addEventListener('submit', async (event) => {
   const formData = new FormData(adminEls.uploadForm);
   formData.set('isPublic', document.getElementById('isPublic').checked ? 'true' : 'false');
 
-  const response = await fetch('/api/upload', {
+  const response = await apiFetch('/api/upload', {
     method: 'POST',
-    headers: authHeaders(),
     body: formData,
   });
 
@@ -198,6 +182,5 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
-fillSavedKey();
 loadProfile().catch((error) => setStatus(adminEls.profileStatus, error.message, true));
 loadAdminList().catch((error) => setStatus(adminEls.uploadStatus, error.message, true));
