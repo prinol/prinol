@@ -9,7 +9,7 @@ function setLoginStatus(message, isError = false) {
 
 function getReturnTo() {
   const returnTo = new URL(window.location.href).searchParams.get('returnTo');
-  if (!returnTo || !returnTo.startsWith('/')) return '/admin.html';
+  if (!returnTo || !returnTo.startsWith('/')) return '/admin';
   return returnTo;
 }
 
@@ -20,6 +20,7 @@ loginForm.addEventListener('submit', async (event) => {
   const response = await fetch('/api/auth', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
     body: JSON.stringify({ password: adminPassword.value }),
   });
 
