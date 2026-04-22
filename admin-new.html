@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>새 작품 등록 | PRINOL</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <main class="admin-shell">
+    <div class="admin-topbar">
+      <a class="admin-brand" href="admin.html">PRINOL ADMIN</a>
+      <div class="admin-top-actions">
+        <a class="ghost-button" href="admin.html">대시보드</a>
+        <button class="ghost-button" id="logoutButton" type="button">로그아웃</button>
+      </div>
+    </div>
+
+    <section class="page-head">
+      <div>
+        <p class="admin-eyebrow">UPLOAD</p>
+        <h1>새 작품 등록</h1>
+        <p class="page-subcopy">이미지와 작품 정보를 입력해 새 공개작품 또는 비공개작품으로 등록합니다.</p>
+      </div>
+      <div class="page-head-actions">
+        <button class="primary-button" id="uploadButton" type="button">작품 등록</button>
+      </div>
+    </section>
+
+    <section class="admin-panel wide-panel">
+      <div class="admin-form-grid">
+        <label class="field span-12">
+          <span class="field-label">이미지 파일</span>
+          <input id="imageFile" type="file" accept="image/*">
+        </label>
+
+        <label class="field span-8">
+          <span class="field-label">작품명</span>
+          <input id="title" type="text" placeholder="작품명">
+        </label>
+
+        <label class="field span-4">
+          <span class="field-label">연도</span>
+          <input id="year" type="text" placeholder="예: 2025">
+        </label>
+
+        <label class="field span-6">
+          <span class="field-label">카테고리</span>
+          <input id="category" type="text" placeholder="예: Painting, Drawing, Installation">
+        </label>
+
+        <label class="field span-6">
+          <span class="field-label">키워드</span>
+          <input id="tags" type="text" placeholder="쉼표로 구분 예: blue, abstract, paper">
+        </label>
+
+        <label class="field span-12">
+          <span class="field-label">설명</span>
+          <textarea id="description" rows="10" placeholder="작품 설명"></textarea>
+        </label>
+
+        <label class="toggle-field span-12">
+          <input id="isPublic" type="checkbox" checked>
+          <span>공개 작품으로 등록</span>
+        </label>
+      </div>
+
+      <div class="status-line" id="uploadStatus"></div>
+    </section>
+  </main>
+
+  <script src="admin-shell.js" defer></script>
+  <script src="admin-new.js" defer></script>
+</body>
+</html>

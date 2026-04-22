@@ -3,146 +3,47 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PRINOL ADMIN</title>
+  <title>Admin | PRINOL</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css">
 </head>
 <body>
-  <header class="site-header">
-    <div class="container nav-row">
-      <a class="brand" href="./">PRINOL</a>
-      <nav class="nav-links">
-        <a href="./">Public Site</a>
-        <button id="logoutBtn" class="ghost-btn" type="button">로그아웃</button>
-      </nav>
+  <main class="admin-shell">
+    <div class="admin-topbar">
+      <a class="admin-brand" href="./">PRINOL</a>
+      <div class="admin-top-actions">
+        <a class="ghost-button" href="./" target="_blank" rel="noreferrer">공개 페이지 보기</a>
+        <button class="ghost-button" id="logoutButton" type="button">로그아웃</button>
+      </div>
     </div>
-  </header>
 
-  <main class="section admin-main">
-    <div class="container admin-grid">
-      <section class="card admin-section">
-        <p class="eyebrow">SITE PROFILE</p>
-        <h1>프로필 및 텍스트 관리</h1>
-        <form id="profileForm" class="stack-lg">
-          <div class="grid-2">
-            <div>
-              <label class="field-label" for="heroTitleInput">상단 대제목</label>
-              <input id="heroTitleInput" name="hero_title" type="text">
-            </div>
-            <div>
-              <label class="field-label" for="heroSubtitleInput">상단 소제목</label>
-              <input id="heroSubtitleInput" name="hero_subtitle" type="text">
-            </div>
-          </div>
+    <section class="admin-hero">
+      <p class="admin-eyebrow">ADMIN DASHBOARD</p>
+      <h1>관리자 페이지</h1>
+      <p class="admin-hero-copy">자주 쓰는 작업을 버튼형 메뉴로 분리했습니다. 원하는 작업을 선택해 관리하세요.</p>
+    </section>
 
-          <div>
-            <label class="field-label" for="aboutTitleInput">작가 소개 제목</label>
-            <input id="aboutTitleInput" name="about_title" type="text">
-          </div>
+    <section class="admin-grid-3">
+      <a class="admin-nav-card" href="admin-profile.html">
+        <span class="admin-nav-kicker">PROFILE</span>
+        <h2>프로필 / 설명 관리</h2>
+        <p>상단 대제목, 소제목, 작가 소개 제목과 본문, 이메일, 수상 이력을 수정합니다.</p>
+      </a>
 
-          <div>
-            <label class="field-label" for="aboutBodyInput">작가 소개 본문</label>
-            <textarea id="aboutBodyInput" name="about_body" rows="5"></textarea>
-          </div>
-
-          <div>
-            <label class="field-label" for="awardsTextInput">수상 이력</label>
-            <textarea id="awardsTextInput" name="awards_text" rows="6" placeholder="한 줄에 하나씩 입력하면 공개 페이지에서 불릿 목록으로 표시됩니다."></textarea>
-          </div>
-
-          <div class="grid-2">
-            <div>
-              <label class="field-label" for="contactEmailInput">이메일</label>
-              <input id="contactEmailInput" name="contact_email" type="email">
-            </div>
-            <div>
-              <label class="field-label" for="contactInstagramInput">인스타그램 URL</label>
-              <input id="contactInstagramInput" name="contact_instagram" type="url">
-            </div>
-          </div>
-
-          <div class="form-actions">
-            <button class="primary-btn" type="submit">프로필 저장</button>
-            <span id="profileStatus" class="status-text"></span>
-          </div>
-        </form>
-      </section>
-
-      <section class="card admin-section">
-        <p class="eyebrow">UPLOAD</p>
+      <a class="admin-nav-card" href="admin-new.html">
+        <span class="admin-nav-kicker">UPLOAD</span>
         <h2>새 작품 등록</h2>
-        <form id="artworkForm" class="stack-lg">
-          <div class="grid-2">
-            <div>
-              <label class="field-label" for="titleInput">제목</label>
-              <input id="titleInput" name="title" type="text" required>
-            </div>
-            <div>
-              <label class="field-label" for="yearInput">연도</label>
-              <input id="yearInput" name="year" type="text" placeholder="2026">
-            </div>
-          </div>
-          <div class="grid-2">
-            <div>
-              <label class="field-label" for="categoryInput">카테고리</label>
-              <input id="categoryInput" name="category" type="text" placeholder="Painting / Drawing / Photo">
-            </div>
-            <div>
-              <label class="field-label" for="tagsInput">태그</label>
-              <input id="tagsInput" name="tags" type="text" placeholder="abstract, ink, study">
-            </div>
-          </div>
-          <div>
-            <label class="field-label" for="descriptionInput">설명</label>
-            <textarea id="descriptionInput" name="description" rows="5"></textarea>
-          </div>
-          <div>
-            <label class="field-label" for="imageInput">이미지 파일</label>
-            <input id="imageInput" name="image" type="file" accept="image/*" required>
-          </div>
-          <label class="checkbox-row">
-            <input id="isPublicInput" name="is_public" type="checkbox" checked>
-            <span>공개 작품으로 게시</span>
-          </label>
-          <div class="form-actions">
-            <button class="primary-btn" type="submit">작품 저장</button>
-            <span id="artworkStatus" class="status-text"></span>
-          </div>
-        </form>
-      </section>
+        <p>이미지 업로드와 작품명, 연도, 카테고리, 설명, 키워드, 공개 여부를 등록합니다.</p>
+      </a>
 
-      <section class="card admin-section admin-list-section">
-        <p class="eyebrow">MANAGE</p>
+      <a class="admin-nav-card" href="admin-manage.html">
+        <span class="admin-nav-kicker">MANAGE</span>
         <h2>등록 작품 관리</h2>
-        <div id="adminList" class="admin-list"></div>
-      </section>
-    </div>
+        <p>작은 썸네일과 리스트 중심으로 공개 여부와 삭제를 우선 관리하고, 항목 클릭 시 세부 수정이 가능합니다.</p>
+      </a>
+    </section>
   </main>
 
-  <template id="adminArtworkTemplate">
-    <article class="admin-item">
-      <div class="admin-item-image-wrap"><img class="admin-item-image" alt=""></div>
-      <div class="admin-item-body">
-        <div class="admin-item-head">
-          <h3 class="admin-item-title"></h3>
-          <span class="admin-item-year"></span>
-        </div>
-        <div class="grid-2 compact-grid">
-          <input class="edit-title" type="text" placeholder="제목">
-          <input class="edit-year" type="text" placeholder="연도">
-          <input class="edit-category" type="text" placeholder="카테고리">
-          <input class="edit-tags" type="text" placeholder="태그">
-        </div>
-        <textarea class="edit-description" rows="4" placeholder="설명"></textarea>
-        <label class="checkbox-row small"><input class="edit-public" type="checkbox"><span>공개</span></label>
-        <div class="admin-actions">
-          <button class="primary-btn save-item-btn" type="button">수정 저장</button>
-          <button class="danger-btn delete-item-btn" type="button">삭제</button>
-        </div>
-        <p class="status-text item-status"></p>
-      </div>
-    </article>
-  </template>
-
-  <script src="admin.js" defer></script>
+  <script src="admin-shell.js" defer></script>
 </body>
 </html>

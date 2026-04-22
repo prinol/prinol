@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>등록 작품 관리 | PRINOL</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <main class="admin-shell admin-manage-layout">
+    <div class="admin-topbar">
+      <a class="admin-brand" href="admin.html">PRINOL ADMIN</a>
+      <div class="admin-top-actions">
+        <a class="ghost-button" href="admin.html">대시보드</a>
+        <button class="ghost-button" id="logoutButton" type="button">로그아웃</button>
+      </div>
+    </div>
+
+    <section class="page-head compact">
+      <div>
+        <p class="admin-eyebrow">MANAGE</p>
+        <h1>등록 작품 관리</h1>
+        <p class="page-subcopy">리스트에서 공개 여부와 삭제를 빠르게 관리하고, 항목 클릭 시 오른쪽에서 상세 수정이 가능합니다.</p>
+      </div>
+    </section>
+
+    <section class="manage-shell">
+      <aside class="admin-panel list-panel">
+        <div class="list-panel-top">
+          <input id="manageSearch" type="search" placeholder="제목 / 카테고리 / 키워드 검색">
+          <div class="status-line small" id="manageCount"></div>
+        </div>
+        <div class="art-list" id="artList"></div>
+      </aside>
+
+      <section class="admin-panel editor-panel">
+        <div class="editor-head">
+          <div>
+            <p class="admin-eyebrow">EDITOR</p>
+            <h2 id="editorTitle">작품을 선택하세요</h2>
+          </div>
+          <div class="editor-actions">
+            <button class="ghost-button" id="resetEditorButton" type="button">선택 해제</button>
+            <button class="primary-button" id="saveArtworkButton" type="button" disabled>수정 저장</button>
+          </div>
+        </div>
+
+        <div id="editorEmpty" class="editor-empty">왼쪽 리스트에서 작품을 클릭하면 여기서 세부 내용을 수정할 수 있습니다.</div>
+
+        <form id="artworkEditor" class="admin-form-grid hidden" onsubmit="return false;">
+          <div class="thumb-preview-box span-12">
+            <div class="thumb-preview-inner">
+              <img id="editorImage" alt="">
+            </div>
+          </div>
+
+          <label class="field span-8">
+            <span class="field-label">작품명</span>
+            <input id="editTitle" type="text">
+          </label>
+
+          <label class="field span-4">
+            <span class="field-label">연도</span>
+            <input id="editYear" type="text">
+          </label>
+
+          <label class="field span-6">
+            <span class="field-label">카테고리</span>
+            <input id="editCategory" type="text">
+          </label>
+
+          <label class="field span-6">
+            <span class="field-label">키워드</span>
+            <input id="editTags" type="text">
+          </label>
+
+          <label class="field span-12">
+            <span class="field-label">설명</span>
+            <textarea id="editDescription" rows="10"></textarea>
+          </label>
+
+          <label class="toggle-field span-12">
+            <input id="editPublic" type="checkbox">
+            <span>공개 작품으로 표시</span>
+          </label>
+        </form>
+
+        <div class="status-line" id="editorStatus"></div>
+      </section>
+    </section>
+  </main>
+
+  <template id="artListItemTemplate">
+    <div class="art-row">
+      <button class="art-row-main" type="button">
+        <div class="art-row-thumb-wrap">
+          <img class="art-row-thumb" alt="">
+        </div>
+        <div class="art-row-text">
+          <strong class="art-row-title"></strong>
+          <div class="art-row-meta"></div>
+        </div>
+      </button>
+      <div class="art-row-quick">
+        <label class="row-toggle">
+          <input class="row-public-toggle" type="checkbox">
+          <span>공개</span>
+        </label>
+        <button class="danger-button row-delete-button" type="button">삭제</button>
+      </div>
+    </div>
+  </template>
+
+  <script src="admin-shell.js" defer></script>
+  <script src="admin-manage.js" defer></script>
+</body>
+</html>

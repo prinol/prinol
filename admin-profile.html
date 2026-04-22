@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>프로필 관리 | PRINOL</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <main class="admin-shell">
+    <div class="admin-topbar">
+      <a class="admin-brand" href="admin.html">PRINOL ADMIN</a>
+      <div class="admin-top-actions">
+        <a class="ghost-button" href="admin.html">대시보드</a>
+        <button class="ghost-button" id="logoutButton" type="button">로그아웃</button>
+      </div>
+    </div>
+
+    <section class="page-head">
+      <div>
+        <p class="admin-eyebrow">PROFILE</p>
+        <h1>프로필 / 설명 관리</h1>
+        <p class="page-subcopy">공개 페이지 상단과 About 영역에 표시되는 텍스트를 수정합니다.</p>
+      </div>
+      <div class="page-head-actions">
+        <button class="primary-button" id="saveProfileButton" type="button">저장</button>
+      </div>
+    </section>
+
+    <section class="admin-panel wide-panel">
+      <div class="admin-form-grid">
+        <label class="field span-12">
+          <span class="field-label">상단 대제목</span>
+          <input id="heroTitle" type="text" placeholder="예: PRINOL Selected Works">
+        </label>
+
+        <label class="field span-12">
+          <span class="field-label">상단 소제목</span>
+          <input id="heroSubtitle" type="text" placeholder="예: Personal Artwork Portfolio">
+        </label>
+
+        <label class="field span-12">
+          <span class="field-label">작가 소개 제목</span>
+          <input id="aboutTitle" type="text" placeholder="예: 작가 소개">
+        </label>
+
+        <label class="field span-12">
+          <span class="field-label">이메일</span>
+          <input id="email" type="email" placeholder="name@example.com">
+        </label>
+
+        <label class="field span-12">
+          <span class="field-label">작가 소개 본문</span>
+          <textarea id="aboutBody" rows="10" placeholder="작가 소개 문장을 입력하세요."></textarea>
+        </label>
+
+        <label class="field span-12">
+          <span class="field-label">수상 이력</span>
+          <textarea id="awards" rows="10" placeholder="엔터로 줄을 구분하면 공개 페이지에서 불릿 목록으로 표시됩니다."></textarea>
+        </label>
+      </div>
+
+      <div class="status-line" id="profileStatus"></div>
+    </section>
+  </main>
+
+  <script src="admin-shell.js" defer></script>
+  <script src="admin-profile.js" defer></script>
+</body>
+</html>
