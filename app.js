@@ -1,3 +1,4 @@
+
 const appState = {
   allItems: [],
   filteredItems: [],
@@ -127,10 +128,8 @@ function renderVisibleItems() {
   });
 
   const categories = new Set(appState.filteredItems.map((item) => item.category).filter(Boolean));
-
   if (appEls.publicCount) appEls.publicCount.textContent = String(appState.filteredItems.length);
   if (appEls.categoryCount) appEls.categoryCount.textContent = String(categories.size);
-
   if (appEls.worksEmpty) appEls.worksEmpty.hidden = appState.visibleItems.length > 0;
 }
 
@@ -144,6 +143,32 @@ function appendMoreVisibleItems() {
   appState.offset += next.length;
   appState.hasMoreFiltered = appState.offset < appState.filteredItems.length;
   renderVisibleItems();
+}
+
+function shuffleArray(items) {
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function uploadedTime(item) {
+  const created = new Date(item.created_at || 0).getTime();
+  if (Number.isFinite(created) && created > 0) return created;
+  const updated = new Date(item.updated_at || 0).getTime();
+  if (Number.isFinite(updated) && updated > 0) return updated;
+  return Number(item.id) || 0;
+}
+
+function orderItemsForRefresh(items) {
+  const pinned = items
+    .filter((item) => Number(item.is_pinned || 0) === 1)
+    .sort((a, b) => uploadedTime(b) - uploadedTime(a));
+
+  const unpinned = shuffleArray(items.filter((item) => Number(item.is_pinned || 0) !== 1));
+  return [...pinned, ...unpinned];
 }
 
 function applyFilters(reset = true) {
@@ -221,8 +246,9 @@ function buildCategoryFilters() {
 async function loadAllWorks() {
   if (appEls.worksLoading) appEls.worksLoading.hidden = false;
   try {
-    const data = await fetchJson('/api/artworks?public=1&limit=200&offset=0');
-    appState.allItems = Array.isArray(data?.items) ? data.items : [];
+    const data = await fetchJson('/api/artworks?public=1&limit=500&offset=0');
+    const items = Array.isArray(data?.items) ? data.items : [];
+    appState.allItems = orderItemsForRefresh(items);
     buildYearOptions();
     buildCategoryFilters();
     applyFilters(true);

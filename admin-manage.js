@@ -1,3 +1,4 @@
+
 const MAX_UPLOAD_BYTES = 500 * 1024;
 
 const manageState = {
@@ -25,6 +26,7 @@ const manageEls = {
   editTags: document.getElementById('editTags'),
   editDescription: document.getElementById('editDescription'),
   editPublic: document.getElementById('editPublic'),
+  editPinned: document.getElementById('editPinned'),
   saveButton: document.getElementById('saveArtworkButton'),
   resetButton: document.getElementById('resetEditorButton'),
   status: document.getElementById('editorStatus'),
@@ -47,7 +49,7 @@ function formatBytes(bytes) {
 async function manageFetchJson(url, options = {}) {
   const res = await fetch(url, {
     headers: { accept: 'application/json', ...(options.headers || {}) },
-    ...options
+    ...options,
   });
   const text = await res.text();
   let data = {};
@@ -133,6 +135,7 @@ function setSelected(item) {
   if (manageEls.editTags) manageEls.editTags.value = item.tags || '';
   if (manageEls.editDescription) manageEls.editDescription.value = item.description || '';
   if (manageEls.editPublic) manageEls.editPublic.checked = !!item.is_public;
+  if (manageEls.editPinned) manageEls.editPinned.checked = !!item.is_pinned;
 }
 
 function createListRow(item) {
@@ -160,7 +163,7 @@ function createListRow(item) {
 
   const title = document.createElement('strong');
   title.className = 'art-row-title';
-  title.textContent = item.title || '(제목 없음)';
+  title.textContent = item.is_pinned ? `📌 ${item.title || '(제목 없음)'}` : (item.title || '(제목 없음)');
 
   const meta = document.createElement('div');
   meta.className = 'art-row-meta';
@@ -174,25 +177,33 @@ function createListRow(item) {
   const quick = document.createElement('div');
   quick.className = 'art-row-quick';
 
-  const rowToggle = document.createElement('label');
-  rowToggle.className = 'row-toggle';
-
+  const publicToggleWrap = document.createElement('label');
+  publicToggleWrap.className = 'row-toggle';
   const publicToggle = document.createElement('input');
   publicToggle.type = 'checkbox';
   publicToggle.checked = !!item.is_public;
+  const publicText = document.createElement('span');
+  publicText.textContent = '공개';
+  publicToggleWrap.appendChild(publicToggle);
+  publicToggleWrap.appendChild(publicText);
 
-  const toggleText = document.createElement('span');
-  toggleText.textContent = '공개';
-
-  rowToggle.appendChild(publicToggle);
-  rowToggle.appendChild(toggleText);
+  const pinnedToggleWrap = document.createElement('label');
+  pinnedToggleWrap.className = 'row-toggle';
+  const pinnedToggle = document.createElement('input');
+  pinnedToggle.type = 'checkbox';
+  pinnedToggle.checked = !!item.is_pinned;
+  const pinnedText = document.createElement('span');
+  pinnedText.textContent = '고정';
+  pinnedToggleWrap.appendChild(pinnedToggle);
+  pinnedToggleWrap.appendChild(pinnedText);
 
   const deleteButton = document.createElement('button');
   deleteButton.type = 'button';
   deleteButton.className = 'danger-button row-delete-button';
   deleteButton.textContent = '삭제';
 
-  quick.appendChild(rowToggle);
+  quick.appendChild(publicToggleWrap);
+  quick.appendChild(pinnedToggleWrap);
   quick.appendChild(deleteButton);
 
   main.addEventListener('click', () => {
@@ -214,6 +225,7 @@ function createListRow(item) {
           tags: item.tags ?? '',
           description: item.description ?? '',
           is_public: publicToggle.checked ? 1 : 0,
+          is_pinned: item.is_pinned ? 1 : 0,
         }),
       });
       item.is_public = publicToggle.checked ? 1 : 0;
@@ -226,6 +238,36 @@ function createListRow(item) {
     } catch (err) {
       publicToggle.checked = !publicToggle.checked;
       manageStatus(err.message || '공개 여부 수정에 실패했습니다.', true);
+    }
+  });
+
+  pinnedToggle.addEventListener('change', async (e) => {
+    e.stopPropagation();
+    try {
+      await manageFetchJson('/api/update', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          id: item.id,
+          title: item.title ?? '',
+          year: item.year ?? '',
+          category: item.category ?? '',
+          tags: item.tags ?? '',
+          description: item.description ?? '',
+          is_public: item.is_public ? 1 : 0,
+          is_pinned: pinnedToggle.checked ? 1 : 0,
+        }),
+      });
+      item.is_pinned = pinnedToggle.checked ? 1 : 0;
+      if (manageState.selected && String(manageState.selected.id) === String(item.id)) {
+        manageState.selected.is_pinned = item.is_pinned;
+        if (manageEls.editPinned) manageEls.editPinned.checked = !!item.is_pinned;
+      }
+      manageStatus('상단 고정 여부를 수정했습니다.');
+      applySearch();
+    } catch (err) {
+      pinnedToggle.checked = !pinnedToggle.checked;
+      manageStatus(err.message || '상단 고정 수정에 실패했습니다.', true);
     }
   });
 
@@ -370,7 +412,7 @@ async function prepareReplacementFile() {
 async function loadArtworks() {
   manageStatus('작품 목록을 불러오는 중...');
   try {
-    const raw = await manageFetchJson('/api/artworks?all=1&limit=100');
+    const raw = await manageFetchJson('/api/artworks?all=1&limit=200');
     manageState.artworks = Array.isArray(raw?.items) ? raw.items : [];
     manageStatus('작품 목록을 불러왔습니다.');
     applySearch();
@@ -381,7 +423,6 @@ async function loadArtworks() {
 
 async function saveSelectedArtwork() {
   if (!manageState.selected) return;
-
   manageStatus('수정 저장 중...');
 
   try {
@@ -398,6 +439,7 @@ async function saveSelectedArtwork() {
       formData.append('tags', manageEls.editTags?.value.trim() || '');
       formData.append('description', manageEls.editDescription?.value || '');
       formData.append('is_public', manageEls.editPublic?.checked ? '1' : '0');
+      formData.append('is_pinned', manageEls.editPinned?.checked ? '1' : '0');
 
       const res = await fetch('/api/update', {
         method: 'POST',
@@ -423,6 +465,7 @@ async function saveSelectedArtwork() {
         tags: manageEls.editTags?.value.trim() || '',
         description: manageEls.editDescription?.value || '',
         is_public: manageEls.editPublic?.checked ? 1 : 0,
+        is_pinned: manageEls.editPinned?.checked ? 1 : 0,
       };
 
       await manageFetchJson('/api/update', {

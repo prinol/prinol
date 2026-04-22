@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="ko">
 <head>
@@ -21,7 +22,7 @@
       <div>
         <p class="admin-eyebrow">MANAGE</p>
         <h1>등록 작품 관리</h1>
-        <p class="page-subcopy">리스트에서 공개 여부와 삭제를 빠르게 관리하고, 항목 클릭 시 오른쪽에서 세부 내용을 수정할 수 있습니다.</p>
+        <p class="page-subcopy">리스트에서 공개 여부, 상단 고정, 삭제를 관리하고, 항목 클릭 시 오른쪽에서 세부 내용을 수정할 수 있습니다.</p>
       </div>
     </section>
 
@@ -108,13 +109,17 @@
             <input id="editPublic" type="checkbox">
             <span>공개 작품으로 표시</span>
           </label>
+
+          <label class="toggle-field span-12">
+            <input id="editPinned" type="checkbox">
+            <span>상단에 고정</span>
+          </label>
         </form>
 
         <div class="status-line" id="editorStatus"></div>
       </section>
     </section>
   </main>
-
   <script src="admin-shell.js" defer></script>
   <script src="admin-manage.js" defer></script>
 </body>
