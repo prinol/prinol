@@ -1,3 +1,4 @@
+
 import { json, badRequest, ensureSchema, fileExtension, uuid, makeImageUrl } from '../_utils.js';
 
 function normalizeText(value) {
@@ -5,13 +6,7 @@ function normalizeText(value) {
 }
 
 function allowedImageType(type = '') {
-  return [
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-    'image/gif',
-    'image/jpg',
-  ].includes(String(type).toLowerCase());
+  return ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg'].includes(String(type).toLowerCase());
 }
 
 async function updateMetadataOnly(context, body) {
@@ -27,26 +22,28 @@ async function updateMetadataOnly(context, body) {
   const tags = normalizeText(body.tags);
   const description = String(body.description ?? '');
   const isPublic = String(body.is_public ?? body.isPublic ?? '1') === '1' ? 1 : 0;
+  const isPinned = String(body.is_pinned ?? body.isPinned ?? '0') === '1' ? 1 : 0;
 
   if (!title) return badRequest('작품명을 입력하세요.');
 
-  const existing = await env.DB.prepare(`SELECT * FROM artworks WHERE id = ? LIMIT 1`).bind(id).first();
+  const existing = await env.DB.prepare('SELECT * FROM artworks WHERE id = ? LIMIT 1').bind(id).first();
   if (!existing) return json({ error: '작품을 찾을 수 없습니다.' }, { status: 404 });
 
   const now = new Date().toISOString();
 
   await env.DB.prepare(`
     UPDATE artworks
-    SET title = ?, year = ?, category = ?, tags = ?, description = ?, is_public = ?, updated_at = ?
+    SET title = ?, year = ?, category = ?, tags = ?, description = ?, is_public = ?, is_pinned = ?, updated_at = ?
     WHERE id = ?
-  `).bind(title, year, category, tags, description, isPublic, now, id).run();
+  `).bind(title, year, category, tags, description, isPublic, isPinned, now, id).run();
 
-  const item = await env.DB.prepare(`SELECT * FROM artworks WHERE id = ? LIMIT 1`).bind(id).first();
+  const item = await env.DB.prepare('SELECT * FROM artworks WHERE id = ? LIMIT 1').bind(id).first();
   return json({
     ok: true,
     item: {
       ...item,
       is_public: Number(item.is_public ?? 1),
+      is_pinned: Number(item.is_pinned ?? 0),
       image_url: makeImageUrl(request, item.image_key || ''),
     },
   });
@@ -70,10 +67,11 @@ async function updateWithReplacementImage(context, formData) {
   const tags = normalizeText(formData.get('tags'));
   const description = String(formData.get('description') ?? '');
   const isPublic = String(formData.get('is_public') ?? '1') === '1' ? 1 : 0;
+  const isPinned = String(formData.get('is_pinned') ?? '0') === '1' ? 1 : 0;
 
   if (!title) return badRequest('작품명을 입력하세요.');
 
-  const existing = await env.DB.prepare(`SELECT * FROM artworks WHERE id = ? LIMIT 1`).bind(id).first();
+  const existing = await env.DB.prepare('SELECT * FROM artworks WHERE id = ? LIMIT 1').bind(id).first();
   if (!existing) return json({ error: '작품을 찾을 수 없습니다.' }, { status: 404 });
 
   const ext = fileExtension(file.name) || (
@@ -87,35 +85,33 @@ async function updateWithReplacementImage(context, formData) {
   const bytes = await file.arrayBuffer();
 
   await env.ART_BUCKET.put(newImageKey, bytes, {
-    httpMetadata: {
-      contentType: file.type || 'application/octet-stream',
-    },
+    httpMetadata: { contentType: file.type || 'application/octet-stream' },
   });
 
   const now = new Date().toISOString();
 
   await env.DB.prepare(`
     UPDATE artworks
-    SET title = ?, year = ?, category = ?, tags = ?, description = ?, is_public = ?, image_key = ?, updated_at = ?
+    SET title = ?, year = ?, category = ?, tags = ?, description = ?, is_public = ?, is_pinned = ?, image_key = ?, updated_at = ?
     WHERE id = ?
-  `).bind(title, year, category, tags, description, isPublic, newImageKey, now, id).run();
+  `).bind(title, year, category, tags, description, isPublic, isPinned, newImageKey, now, id).run();
 
   const removableKey = oldImageKey || existing.image_key || '';
   if (removableKey && removableKey !== newImageKey) {
     try {
       await env.ART_BUCKET.delete(removableKey);
     } catch (err) {
-      // old file delete failure should not fail whole update
       console.warn(err);
     }
   }
 
-  const item = await env.DB.prepare(`SELECT * FROM artworks WHERE id = ? LIMIT 1`).bind(id).first();
+  const item = await env.DB.prepare('SELECT * FROM artworks WHERE id = ? LIMIT 1').bind(id).first();
   return json({
     ok: true,
     item: {
       ...item,
       is_public: Number(item.is_public ?? 1),
+      is_pinned: Number(item.is_pinned ?? 0),
       image_url: makeImageUrl(request, item.image_key || ''),
     },
   });
@@ -124,12 +120,10 @@ async function updateWithReplacementImage(context, formData) {
 export async function onRequestPost(context) {
   try {
     const contentType = context.request.headers.get('content-type') || '';
-
     if (contentType.includes('multipart/form-data')) {
       const formData = await context.request.formData();
       return await updateWithReplacementImage(context, formData);
     }
-
     const body = await context.request.json();
     return await updateMetadataOnly(context, body);
   } catch (err) {
