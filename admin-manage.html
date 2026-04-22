@@ -21,7 +21,7 @@
       <div>
         <p class="admin-eyebrow">MANAGE</p>
         <h1>등록 작품 관리</h1>
-        <p class="page-subcopy">리스트에서 공개 여부와 삭제를 빠르게 관리하고, 항목 클릭 시 오른쪽에서 세부 수정이 가능합니다.</p>
+        <p class="page-subcopy">리스트에서 공개 여부와 삭제를 빠르게 관리하고, 항목 클릭 시 오른쪽에서 세부 내용을 수정할 수 있습니다.</p>
       </div>
     </section>
 
@@ -73,6 +73,12 @@
             </div>
           </div>
 
+          <label class="field span-12">
+            <span class="field-label">이미지 교체</span>
+            <input id="editImageFile" type="file" accept="image/*">
+            <small id="editImageSizeInfo" class="help-text">새 파일을 선택하지 않으면 기존 이미지를 유지합니다.</small>
+          </label>
+
           <label class="field span-8">
             <span class="field-label">작품명</span>
             <input id="editTitle" type="text">
@@ -107,27 +113,6 @@
         <div class="status-line" id="editorStatus"></div>
       </section>
     </section>
-
-    <template id="artListItemTemplate">
-      <div class="art-row">
-        <button class="art-row-main" type="button">
-          <div class="art-row-thumb-wrap">
-            <img class="art-row-thumb" alt="">
-          </div>
-          <div class="art-row-text">
-            <strong class="art-row-title"></strong>
-            <div class="art-row-meta"></div>
-          </div>
-        </button>
-        <div class="art-row-quick">
-          <label class="row-toggle">
-            <input class="row-public-toggle" type="checkbox">
-            <span>공개</span>
-          </label>
-          <button class="danger-button row-delete-button" type="button">삭제</button>
-        </div>
-      </div>
-    </template>
   </main>
 
   <script src="admin-shell.js" defer></script>
