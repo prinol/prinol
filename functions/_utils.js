@@ -36,3 +36,25 @@ export function sanitizeText(value, fallback = '') {
 export function normalizeBool(value) {
   return String(value).toLowerCase() === 'true' || value === true || value === '1' ? 1 : 0;
 }
+
+export async function ensureSiteProfileTable(env) {
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS site_profile (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      artist_intro TEXT NOT NULL DEFAULT '',
+      awards_text TEXT NOT NULL DEFAULT '',
+      contact_email TEXT NOT NULL DEFAULT '',
+      contact_instagram TEXT NOT NULL DEFAULT '',
+      updated_at TEXT NOT NULL
+    )
+  `).run();
+
+  const existing = await env.DB.prepare(`SELECT id FROM site_profile WHERE id = 1`).first();
+  if (!existing) {
+    const now = new Date().toISOString();
+    await env.DB.prepare(`
+      INSERT INTO site_profile (id, artist_intro, awards_text, contact_email, contact_instagram, updated_at)
+      VALUES (1, '', '', '', '', ?1)
+    `).bind(now).run();
+  }
+}
