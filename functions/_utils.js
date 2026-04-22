@@ -1,3 +1,4 @@
+
 export function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
     ...init,
@@ -40,7 +41,7 @@ export function clearSessionCookie() {
   return "admin_session=; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=0";
 }
 
-async function ensureColumn(DB, table, existingNames, name, sql) {
+async function ensureColumn(DB, existingNames, name, sql) {
   if (!existingNames.has(name)) {
     await DB.prepare(sql).run();
     existingNames.add(name);
@@ -58,42 +59,47 @@ export async function ensureSchema(DB) {
       tags TEXT DEFAULT '',
       image_key TEXT NOT NULL,
       is_public INTEGER NOT NULL DEFAULT 1,
+      is_pinned INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
 
-  const columns = await DB.prepare(`PRAGMA table_info(artworks)`).all();
+  const columns = await DB.prepare(\`PRAGMA table_info(artworks)\`).all();
   const names = new Set((columns?.results || []).map((col) => col.name));
 
-  await ensureColumn(DB, "artworks", names, "description", `ALTER TABLE artworks ADD COLUMN description TEXT DEFAULT ''`);
-  await ensureColumn(DB, "artworks", names, "year", `ALTER TABLE artworks ADD COLUMN year TEXT DEFAULT ''`);
-  await ensureColumn(DB, "artworks", names, "category", `ALTER TABLE artworks ADD COLUMN category TEXT DEFAULT ''`);
-  await ensureColumn(DB, "artworks", names, "tags", `ALTER TABLE artworks ADD COLUMN tags TEXT DEFAULT ''`);
-  await ensureColumn(DB, "artworks", names, "image_key", `ALTER TABLE artworks ADD COLUMN image_key TEXT DEFAULT ''`);
-  await ensureColumn(DB, "artworks", names, "is_public", `ALTER TABLE artworks ADD COLUMN is_public INTEGER NOT NULL DEFAULT 1`);
+  await ensureColumn(DB, names, "description", "ALTER TABLE artworks ADD COLUMN description TEXT DEFAULT ''");
+  await ensureColumn(DB, names, "year", "ALTER TABLE artworks ADD COLUMN year TEXT DEFAULT ''");
+  await ensureColumn(DB, names, "category", "ALTER TABLE artworks ADD COLUMN category TEXT DEFAULT ''");
+  await ensureColumn(DB, names, "tags", "ALTER TABLE artworks ADD COLUMN tags TEXT DEFAULT ''");
+  await ensureColumn(DB, names, "image_key", "ALTER TABLE artworks ADD COLUMN image_key TEXT DEFAULT ''");
+  await ensureColumn(DB, names, "is_public", "ALTER TABLE artworks ADD COLUMN is_public INTEGER NOT NULL DEFAULT 1");
+  await ensureColumn(DB, names, "is_pinned", "ALTER TABLE artworks ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0");
+  await ensureColumn(DB, names, "created_at", "ALTER TABLE artworks ADD COLUMN created_at TEXT");
+  await ensureColumn(DB, names, "updated_at", "ALTER TABLE artworks ADD COLUMN updated_at TEXT");
 
-  // SQLite/D1에서는 ALTER TABLE ADD COLUMN 시 non-constant default(CURRENT_TIMESTAMP)를 사용할 수 없음
-  await ensureColumn(DB, "artworks", names, "created_at", `ALTER TABLE artworks ADD COLUMN created_at TEXT`);
-  await ensureColumn(DB, "artworks", names, "updated_at", `ALTER TABLE artworks ADD COLUMN updated_at TEXT`);
-
-  // 누락 컬럼을 추가한 뒤 기존 행의 NULL 값을 보정
   await DB.prepare(`
     UPDATE artworks
     SET created_at = COALESCE(created_at, CURRENT_TIMESTAMP),
-        updated_at = COALESCE(updated_at, CURRENT_TIMESTAMP)
-    WHERE created_at IS NULL OR updated_at IS NULL
+        updated_at = COALESCE(updated_at, CURRENT_TIMESTAMP),
+        is_pinned = COALESCE(is_pinned, 0)
+    WHERE created_at IS NULL OR updated_at IS NULL OR is_pinned IS NULL
   `).run();
 
-  await DB.prepare(`
+  await DB.prepare(\`
     CREATE INDEX IF NOT EXISTS idx_artworks_created_at
     ON artworks(created_at DESC)
-  `).run();
+  \`).run();
 
-  await DB.prepare(`
+  await DB.prepare(\`
     CREATE INDEX IF NOT EXISTS idx_artworks_public
     ON artworks(is_public)
-  `).run();
+  \`).run();
+
+  await DB.prepare(\`
+    CREATE INDEX IF NOT EXISTS idx_artworks_pinned
+    ON artworks(is_pinned)
+  \`).run();
 }
 
 export async function ensureSiteProfileTable(DB) {
@@ -112,20 +118,18 @@ export async function ensureSiteProfileTable(DB) {
     )
   `).run();
 
-  const columns = await DB.prepare(`PRAGMA table_info(site_profile)`).all();
+  const columns = await DB.prepare(\`PRAGMA table_info(site_profile)\`).all();
   const names = new Set((columns?.results || []).map((col) => col.name));
 
-  await ensureColumn(DB, "site_profile", names, "hero_title", `ALTER TABLE site_profile ADD COLUMN hero_title TEXT DEFAULT ''`);
-  await ensureColumn(DB, "site_profile", names, "hero_subtitle", `ALTER TABLE site_profile ADD COLUMN hero_subtitle TEXT DEFAULT ''`);
-  await ensureColumn(DB, "site_profile", names, "about_title", `ALTER TABLE site_profile ADD COLUMN about_title TEXT DEFAULT ''`);
-  await ensureColumn(DB, "site_profile", names, "about_body", `ALTER TABLE site_profile ADD COLUMN about_body TEXT DEFAULT ''`);
-  await ensureColumn(DB, "site_profile", names, "awards_text", `ALTER TABLE site_profile ADD COLUMN awards_text TEXT DEFAULT ''`);
-  await ensureColumn(DB, "site_profile", names, "email", `ALTER TABLE site_profile ADD COLUMN email TEXT DEFAULT ''`);
-  await ensureColumn(DB, "site_profile", names, "instagram_url", `ALTER TABLE site_profile ADD COLUMN instagram_url TEXT DEFAULT ''`);
-
-  // 여기서도 CURRENT_TIMESTAMP default로 ADD COLUMN 하면 D1_ERROR 발생
-  await ensureColumn(DB, "site_profile", names, "created_at", `ALTER TABLE site_profile ADD COLUMN created_at TEXT`);
-  await ensureColumn(DB, "site_profile", names, "updated_at", `ALTER TABLE site_profile ADD COLUMN updated_at TEXT`);
+  await ensureColumn(DB, names, "hero_title", "ALTER TABLE site_profile ADD COLUMN hero_title TEXT DEFAULT ''");
+  await ensureColumn(DB, names, "hero_subtitle", "ALTER TABLE site_profile ADD COLUMN hero_subtitle TEXT DEFAULT ''");
+  await ensureColumn(DB, names, "about_title", "ALTER TABLE site_profile ADD COLUMN about_title TEXT DEFAULT ''");
+  await ensureColumn(DB, names, "about_body", "ALTER TABLE site_profile ADD COLUMN about_body TEXT DEFAULT ''");
+  await ensureColumn(DB, names, "awards_text", "ALTER TABLE site_profile ADD COLUMN awards_text TEXT DEFAULT ''");
+  await ensureColumn(DB, names, "email", "ALTER TABLE site_profile ADD COLUMN email TEXT DEFAULT ''");
+  await ensureColumn(DB, names, "instagram_url", "ALTER TABLE site_profile ADD COLUMN instagram_url TEXT DEFAULT ''");
+  await ensureColumn(DB, names, "created_at", "ALTER TABLE site_profile ADD COLUMN created_at TEXT");
+  await ensureColumn(DB, names, "updated_at", "ALTER TABLE site_profile ADD COLUMN updated_at TEXT");
 
   await DB.prepare(`
     INSERT INTO site_profile (
