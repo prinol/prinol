@@ -1,185 +1,133 @@
 const state = {
   artworks: [],
-  filtered: [],
-  profile: null,
+  filtered: []
 };
 
-const els = {
-  galleryGrid: document.getElementById('galleryGrid'),
-  emptyState: document.getElementById('emptyState'),
-  searchInput: document.getElementById('searchInput'),
-  categoryFilter: document.getElementById('categoryFilter'),
-  yearFilter: document.getElementById('yearFilter'),
-  publicCount: document.getElementById('publicCount'),
-  categoryCount: document.getElementById('categoryCount'),
+const elements = {
+  brandText: document.getElementById('brandText'),
   heroTitle: document.getElementById('heroTitle'),
   heroSubtitle: document.getElementById('heroSubtitle'),
   aboutTitle: document.getElementById('aboutTitle'),
-  template: document.getElementById('artCardTemplate'),
-  lightbox: document.getElementById('lightbox'),
-  lightboxImage: document.getElementById('lightboxImage'),
-  lightboxTitle: document.getElementById('lightboxTitle'),
-  lightboxDescription: document.getElementById('lightboxDescription'),
-  closeLightbox: document.getElementById('closeLightbox'),
-  artistIntroText: document.getElementById('artistIntroText'),
+  aboutBody: document.getElementById('aboutBody'),
   awardsList: document.getElementById('awardsList'),
-  contactEmailText: document.getElementById('contactEmailText'),
-  contactInstagramText: document.getElementById('contactInstagramText'),
+  contactEmail: document.getElementById('contactEmail'),
+  contactInstagram: document.getElementById('contactInstagram'),
+  publicCount: document.getElementById('publicCount'),
+  categoryCount: document.getElementById('categoryCount'),
+  searchInput: document.getElementById('searchInput'),
+  categoryFilter: document.getElementById('categoryFilter'),
+  gallery: document.getElementById('gallery'),
+  emptyState: document.getElementById('emptyState'),
+  artworkCardTemplate: document.getElementById('artworkCardTemplate')
 };
 
-async function fetchData() {
-  const [artworksResponse, profileResponse] = await Promise.all([
-    fetch('/api/artworks'),
-    fetch('/api/profile'),
-  ]);
-
-  if (!artworksResponse.ok) throw new Error('작품 목록을 불러오지 못했습니다.');
-  if (!profileResponse.ok) throw new Error('작가 소개를 불러오지 못했습니다.');
-
-  state.artworks = await artworksResponse.json();
-  state.profile = await profileResponse.json();
-
-  fillFilters();
-  renderProfile();
-  applyFilters();
+async function fetchJson(url) {
+  const res = await fetch(url, { headers: { Accept: 'application/json' } });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
 }
 
-function renderProfile() {
-  const profile = state.profile || {};
+function normalizeTags(text = '') {
+  return text.split(',').map(v => v.trim()).filter(Boolean);
+}
 
-  if (profile.hero_title) {
-    els.heroTitle.textContent = profile.hero_title;
-  }
+function renderProfile(profile) {
+  elements.brandText.textContent = profile.hero_title || 'PRINOL';
+  elements.heroTitle.textContent = profile.hero_title || 'PRINOL';
+  elements.heroSubtitle.textContent = profile.hero_subtitle || '';
+  elements.aboutTitle.textContent = profile.about_title || '작가 소개';
+  elements.aboutBody.textContent = profile.about_body || '';
 
-  if (profile.hero_subtitle) {
-    els.heroSubtitle.textContent = profile.hero_subtitle;
-  }
-
-  if (profile.about_title) {
-    els.aboutTitle.textContent = profile.about_title;
-  }
-
-  if (profile.artist_intro) {
-    els.artistIntroText.textContent = profile.artist_intro;
-  }
-
-  const awardLines = String(profile.awards_text || '')
-    .split(/?
-/)
-    .map(line => line.trim())
+  elements.awardsList.innerHTML = '';
+  const lines = (profile.awards_text || '')
+    .split(/\r?\n/)
+    .map(v => v.trim())
     .filter(Boolean);
-
-  els.awardsList.innerHTML = '';
-  if (awardLines.length) {
-    awardLines.forEach((line) => {
+  if (lines.length === 0) {
+    const li = document.createElement('li');
+    li.textContent = '등록된 수상 이력이 없습니다.';
+    elements.awardsList.appendChild(li);
+  } else {
+    lines.forEach(line => {
       const li = document.createElement('li');
       li.textContent = line;
-      els.awardsList.appendChild(li);
+      elements.awardsList.appendChild(li);
     });
-    els.awardsList.classList.remove('hidden');
-  } else {
-    els.awardsList.classList.add('hidden');
   }
 
-  if (profile.contact_email) {
-    els.contactEmailText.textContent = `Email: ${profile.contact_email}`;
-  }
-
-  if (profile.contact_instagram) {
-    els.contactInstagramText.textContent = `Instagram: ${profile.contact_instagram}`;
-  }
+  elements.contactEmail.textContent = profile.contact_email || '-';
+  elements.contactEmail.href = profile.contact_email ? `mailto:${profile.contact_email}` : '#';
+  elements.contactInstagram.textContent = profile.contact_instagram || '-';
+  elements.contactInstagram.href = profile.contact_instagram || '#';
 }
 
-function fillFilters() {
-  const categories = [...new Set(state.artworks.map(item => item.category).filter(Boolean))].sort();
-  const years = [...new Set(state.artworks.map(item => item.year).filter(Boolean))].sort((a, b) => Number(b) - Number(a));
-
-  els.categoryFilter.innerHTML = '<option value="all">전체</option>' + categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-  els.yearFilter.innerHTML = '<option value="all">전체</option>' + years.map(y => `<option value="${escapeHtml(String(y))}">${escapeHtml(String(y))}</option>`).join('');
-
-  els.publicCount.textContent = String(state.artworks.length);
-  els.categoryCount.textContent = String(categories.length);
+function populateCategoryFilter(artworks) {
+  const categories = [...new Set(artworks.map(item => (item.category || '').trim()).filter(Boolean))].sort();
+  elements.categoryFilter.innerHTML = '<option value="">전체 카테고리</option>';
+  categories.forEach(category => {
+    const option = document.createElement('option');
+    option.value = category;
+    option.textContent = category;
+    elements.categoryFilter.appendChild(option);
+  });
+  elements.categoryCount.textContent = String(categories.length);
 }
 
 function applyFilters() {
-  const q = els.searchInput.value.trim().toLowerCase();
-  const category = els.categoryFilter.value;
-  const year = els.yearFilter.value;
+  const search = elements.searchInput.value.trim().toLowerCase();
+  const category = elements.categoryFilter.value;
 
   state.filtered = state.artworks.filter(item => {
-    const haystack = [item.title, item.description, item.tags].join(' ').toLowerCase();
-    const matchesQuery = !q || haystack.includes(q);
-    const matchesCategory = category === 'all' || item.category === category;
-    const matchesYear = year === 'all' || String(item.year ?? '') === year;
-    return matchesQuery && matchesCategory && matchesYear;
+    const haystack = [item.title, item.description, item.tags, item.category, item.year].join(' ').toLowerCase();
+    const searchMatch = !search || haystack.includes(search);
+    const categoryMatch = !category || item.category === category;
+    return searchMatch && categoryMatch;
   });
 
   renderGallery();
 }
 
 function renderGallery() {
-  els.galleryGrid.innerHTML = '';
-  els.emptyState.classList.toggle('hidden', state.filtered.length > 0);
+  elements.gallery.innerHTML = '';
+  if (state.filtered.length === 0) {
+    elements.emptyState.classList.remove('hidden');
+    return;
+  }
+  elements.emptyState.classList.add('hidden');
 
   state.filtered.forEach(item => {
-    const node = els.template.content.firstElementChild.cloneNode(true);
-    node.querySelector('img').src = item.image_url;
-    node.querySelector('img').alt = item.title;
-    node.querySelector('.card-category').textContent = item.category || 'Uncategorized';
-    node.querySelector('.card-year').textContent = item.year || '';
-    node.querySelector('.card-title').textContent = item.title;
-    node.querySelector('.card-description').textContent = item.description || '';
-
-    const tagsWrap = node.querySelector('.card-tags');
-    parseTags(item.tags).forEach(tag => {
-      const span = document.createElement('span');
-      span.className = 'tag';
-      span.textContent = tag;
-      tagsWrap.appendChild(span);
-    });
-
-    node.querySelector('.card-image-button').addEventListener('click', () => openLightbox(item));
-    els.galleryGrid.appendChild(node);
+    const node = elements.artworkCardTemplate.content.firstElementChild.cloneNode(true);
+    const img = node.querySelector('.artwork-image');
+    img.src = item.image_url;
+    img.alt = item.title;
+    node.querySelector('.artwork-title').textContent = item.title || '';
+    node.querySelector('.artwork-year').textContent = item.year || '';
+    node.querySelector('.artwork-category').textContent = item.category || '';
+    node.querySelector('.artwork-description').textContent = item.description || '';
+    const tags = normalizeTags(item.tags).map(tag => `#${tag}`).join(' ');
+    node.querySelector('.artwork-tags').textContent = tags;
+    elements.gallery.appendChild(node);
   });
 }
 
-function parseTags(tags) {
-  if (!tags) return [];
-  return String(tags)
-    .split(',')
-    .map(tag => tag.trim())
-    .filter(Boolean);
+async function init() {
+  elements.searchInput.addEventListener('input', applyFilters);
+  elements.categoryFilter.addEventListener('change', applyFilters);
+
+  const [profilePayload, artworksPayload] = await Promise.all([
+    fetchJson('/api/profile'),
+    fetchJson('/api/artworks')
+  ]);
+
+  renderProfile(profilePayload.profile);
+  state.artworks = artworksPayload.items || [];
+  elements.publicCount.textContent = String(state.artworks.length);
+  populateCategoryFilter(state.artworks);
+  applyFilters();
 }
 
-function openLightbox(item) {
-  els.lightboxImage.src = item.image_url;
-  els.lightboxImage.alt = item.title;
-  els.lightboxTitle.textContent = item.title;
-  els.lightboxDescription.textContent = item.description || '';
-  els.lightbox.showModal();
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
-
-els.searchInput.addEventListener('input', applyFilters);
-els.categoryFilter.addEventListener('change', applyFilters);
-els.yearFilter.addEventListener('change', applyFilters);
-els.closeLightbox.addEventListener('click', () => els.lightbox.close());
-els.lightbox.addEventListener('click', (event) => {
-  const rect = els.lightbox.getBoundingClientRect();
-  const clickedInDialog = rect.top <= event.clientY && event.clientY <= rect.top + rect.height && rect.left <= event.clientX && event.clientX <= rect.left + rect.width;
-  if (!clickedInDialog) els.lightbox.close();
-});
-
-fetchData().catch((error) => {
-  console.error(error);
-  els.emptyState.textContent = error.message;
-  els.emptyState.classList.remove('hidden');
+init().catch(err => {
+  console.error(err);
+  elements.emptyState.classList.remove('hidden');
+  elements.emptyState.textContent = '데이터를 불러오지 못했습니다.';
 });

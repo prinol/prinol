@@ -1,34 +1,29 @@
 const loginForm = document.getElementById('loginForm');
-const adminPassword = document.getElementById('adminPassword');
-const loginStatus = document.getElementById('loginStatus');
+const passwordInput = document.getElementById('password');
+const loginError = document.getElementById('loginError');
 
-function setLoginStatus(message, isError = false) {
-  loginStatus.textContent = message;
-  loginStatus.style.color = isError ? 'var(--danger)' : 'var(--muted)';
+function showError(message) {
+  loginError.textContent = message;
+  loginError.classList.remove('hidden');
 }
 
-function getReturnTo() {
-  const returnTo = new URL(window.location.href).searchParams.get('returnTo');
-  if (!returnTo || !returnTo.startsWith('/')) return '/admin';
-  return returnTo;
-}
-
-loginForm.addEventListener('submit', async (event) => {
+loginForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
-  setLoginStatus('로그인 확인 중...');
+  loginError.classList.add('hidden');
 
-  const response = await fetch('/api/auth', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'same-origin',
-    body: JSON.stringify({ password: adminPassword.value }),
-  });
+  try {
+    const response = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: passwordInput.value })
+    });
 
-  const data = await response.json().catch(() => ({ error: '로그인 응답을 읽지 못했습니다.' }));
-  if (!response.ok) {
-    setLoginStatus(data.error || '로그인 실패', true);
-    return;
+    const data = await response.json();
+    if (!response.ok || !data.ok) {
+      throw new Error(data.error || '로그인에 실패했습니다.');
+    }
+    location.href = '/admin.html';
+  } catch (error) {
+    showError(error.message);
   }
-
-  window.location.href = getReturnTo();
 });
