@@ -1,5 +1,8 @@
+const MAX_UPLOAD_BYTES = 500 * 1024;
+
 const newEls = {
   imageFile: document.getElementById('imageFile'),
+  imageSizeInfo: document.getElementById('imageSizeInfo'),
   title: document.getElementById('title'),
   year: document.getElementById('year'),
   category: document.getElementById('category'),
@@ -10,14 +13,120 @@ const newEls = {
   status: document.getElementById('uploadStatus'),
 };
 
+let preparedUploadFile = null;
+
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes)) return '-';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
 function newStatus(message, isError = false) {
   newEls.status.textContent = message || '';
   newEls.status.classList.toggle('error', !!isError);
   newEls.status.classList.toggle('success', !isError && !!message);
 }
 
-async function uploadArtwork() {
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('이미지를 불러오지 못했습니다.'));
+    };
+    img.src = url;
+  });
+}
+
+function canvasToBlob(canvas, type, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) reject(new Error('이미지 변환에 실패했습니다.'));
+      else resolve(blob);
+    }, type, quality);
+  });
+}
+
+async function compressImageToLimit(file, limitBytes = MAX_UPLOAD_BYTES) {
+  if (!file.type.startsWith('image/')) {
+    throw new Error('이미지 파일만 업로드할 수 있습니다.');
+  }
+
+  if (file.size <= limitBytes) {
+    return new File([file], file.name, { type: file.type || 'image/jpeg' });
+  }
+
+  const img = await loadImage(file);
+
+  let width = img.naturalWidth;
+  let height = img.naturalHeight;
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { alpha: false });
+
+  let mimeType = 'image/jpeg';
+  let quality = 0.9;
+  let blob = null;
+
+  for (let scaleStep = 0; scaleStep < 6; scaleStep++) {
+    const scale = scaleStep === 0 ? 1 : Math.pow(0.9, scaleStep);
+    const targetW = Math.max(320, Math.round(width * scale));
+    const targetH = Math.max(320, Math.round(height * scale * (height / width ? 1 : 1)));
+
+    canvas.width = targetW;
+    canvas.height = Math.round((img.naturalHeight / img.naturalWidth) * targetW);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    quality = 0.9;
+    for (let i = 0; i < 8; i++) {
+      blob = await canvasToBlob(canvas, mimeType, quality);
+      if (blob.size <= limitBytes) {
+        return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: mimeType });
+      }
+      quality -= 0.1;
+      if (quality < 0.2) break;
+    }
+  }
+
+  if (!blob) {
+    throw new Error('이미지 압축에 실패했습니다.');
+  }
+
+  return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: mimeType });
+}
+
+async function prepareSelectedFile() {
   const file = newEls.imageFile.files?.[0];
+  preparedUploadFile = null;
+
+  if (!file) {
+    newEls.imageSizeInfo.textContent = '선택 전';
+    return;
+  }
+
+  newEls.imageSizeInfo.textContent = `원본: ${formatBytes(file.size)} / 압축 준비 중...`;
+
+  try {
+    const compressed = await compressImageToLimit(file, MAX_UPLOAD_BYTES);
+    preparedUploadFile = compressed;
+    newEls.imageSizeInfo.textContent = `원본: ${formatBytes(file.size)} → 업로드 파일: ${formatBytes(compressed.size)} (목표 500KB 이하)`;
+  } catch (err) {
+    preparedUploadFile = null;
+    newEls.imageSizeInfo.textContent = err.message || '압축 실패';
+  }
+}
+
+async function uploadArtwork() {
+  const file = preparedUploadFile || newEls.imageFile.files?.[0];
+
   if (!file) {
     newStatus('이미지 파일을 선택하세요.', true);
     return;
@@ -46,6 +155,8 @@ async function uploadArtwork() {
 
     newStatus('작품을 등록했습니다.');
     newEls.imageFile.value = '';
+    newEls.imageSizeInfo.textContent = '선택 전';
+    preparedUploadFile = null;
     newEls.title.value = '';
     newEls.year.value = '';
     newEls.category.value = '';
@@ -57,4 +168,5 @@ async function uploadArtwork() {
   }
 }
 
+newEls.imageFile?.addEventListener('change', prepareSelectedFile);
 newEls.uploadButton?.addEventListener('click', uploadArtwork);

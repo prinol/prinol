@@ -265,6 +265,14 @@ body{
   justify-content:flex-start;
 }
 
+.help-text{
+  display:block;
+  margin-top:6px;
+  color:#9ca6b3;
+  font-size:.86rem;
+  line-height:1.5;
+}
+
 .span-12{grid-column:span 12}
 .span-8{grid-column:span 8}
 .span-6{grid-column:span 6}
@@ -456,7 +464,6 @@ body{
   object-fit:contain;
 }
 
-/* login */
 .login-shell{
   min-height:100vh;
   display:flex;
@@ -489,6 +496,7 @@ body{
   .admin-grid-3{
     grid-template-columns:1fr;
   }
+
   .manage-shell{
     grid-template-columns:1fr;
   }

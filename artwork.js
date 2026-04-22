@@ -54,7 +54,7 @@ async function init() {
   }
 
   try {
-    const data = await fetchJson('/api/artworks?public=1&limit=100&offset=0');
+    const data = await fetchJson('/api/artworks?public=1&limit=200&offset=0');
     const items = Array.isArray(data?.items) ? data.items : [];
     const item = items.find(v => String(v.id) === String(id));
 
