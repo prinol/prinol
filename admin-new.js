@@ -63,10 +63,8 @@ async function compressImageToLimit(file, limitBytes = MAX_UPLOAD_BYTES) {
   }
 
   const img = await loadImage(file);
-
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d', { alpha: false });
-
   let blob = null;
   const sourceRatio = img.naturalHeight / img.naturalWidth;
 
