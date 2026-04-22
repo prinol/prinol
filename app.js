@@ -82,7 +82,7 @@ function normalizeArtworks(raw) {
 function renderProfile() {
   const p = state.profile || normalizeProfile({});
   if (els.brandText) els.brandText.textContent = 'PRINOL';
-  if (els.heroTitle) els.heroTitle.textContent = 'PRINOL';
+  if (els.heroTitle) els.heroTitle.textContent = p.heroTitle;
   if (els.heroSubtitle) els.heroSubtitle.textContent = p.heroSubtitle || 'Personal Artwork Portfolio';
   if (els.aboutTitle) els.aboutTitle.textContent = p.aboutTitle || '작가 소개';
   if (els.aboutBody) els.aboutBody.innerHTML = escapeHtml(p.aboutBody || '').replace(/\n/g, '<br>');
