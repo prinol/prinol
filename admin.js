@@ -2,6 +2,9 @@ const adminEls = {
   logoutButton: document.getElementById('logoutButton'),
   adminStatus: document.getElementById('adminStatus'),
   profileForm: document.getElementById('profileForm'),
+  heroTitle: document.getElementById('heroTitle'),
+  heroSubtitle: document.getElementById('heroSubtitle'),
+  aboutTitle: document.getElementById('aboutTitle'),
   artistIntro: document.getElementById('artistIntro'),
   awardsText: document.getElementById('awardsText'),
   contactEmail: document.getElementById('contactEmail'),
@@ -45,6 +48,9 @@ async function loadProfile() {
     return;
   }
 
+  adminEls.heroTitle.value = data.hero_title || '';
+  adminEls.heroSubtitle.value = data.hero_subtitle || '';
+  adminEls.aboutTitle.value = data.about_title || '';
   adminEls.artistIntro.value = data.artist_intro || '';
   adminEls.awardsText.value = data.awards_text || '';
   adminEls.contactEmail.value = data.contact_email || '';
@@ -130,6 +136,9 @@ adminEls.profileForm.addEventListener('submit', async (event) => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
+      hero_title: adminEls.heroTitle.value,
+      hero_subtitle: adminEls.heroSubtitle.value,
+      about_title: adminEls.aboutTitle.value,
       artist_intro: adminEls.artistIntro.value,
       awards_text: adminEls.awardsText.value,
       contact_email: adminEls.contactEmail.value,

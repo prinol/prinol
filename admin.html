@@ -43,12 +43,24 @@
 
       <form id="profileForm" class="form-grid">
         <div class="field full">
+          <label for="heroTitle">상단 대제목</label>
+          <textarea id="heroTitle" name="heroTitle" rows="2" placeholder="메인 화면 상단의 큰 제목"></textarea>
+        </div>
+        <div class="field full">
+          <label for="heroSubtitle">상단 소제목</label>
+          <textarea id="heroSubtitle" name="heroSubtitle" rows="3" placeholder="메인 화면 상단의 설명 문장"></textarea>
+        </div>
+        <div class="field full">
+          <label for="aboutTitle">작가 소개 제목</label>
+          <input id="aboutTitle" name="aboutTitle" placeholder="예: 작가 소개" />
+        </div>
+        <div class="field full">
           <label for="artistIntro">작가 소개 문장</label>
           <textarea id="artistIntro" name="artistIntro" rows="4" placeholder="작업 세계, 재료, 관심 주제 등을 한두 문단으로 작성"></textarea>
         </div>
         <div class="field full">
-          <label for="awardsText">문장형 수상 이력</label>
-          <textarea id="awardsText" name="awardsText" rows="4" placeholder="예: 2024년 ○○미술대전 대상, 2025년 △△청년작가상 수상 등 주요 이력을 문장형으로 작성"></textarea>
+          <label for="awardsText">수상 이력</label>
+          <textarea id="awardsText" name="awardsText" rows="5" placeholder="한 줄에 하나씩 입력하세요. 공개 페이지에서는 불릿 목록으로 표시됩니다."></textarea>
         </div>
         <div class="field">
           <label for="contactEmail">이메일</label>

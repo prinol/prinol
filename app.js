@@ -12,6 +12,9 @@ const els = {
   yearFilter: document.getElementById('yearFilter'),
   publicCount: document.getElementById('publicCount'),
   categoryCount: document.getElementById('categoryCount'),
+  heroTitle: document.getElementById('heroTitle'),
+  heroSubtitle: document.getElementById('heroSubtitle'),
+  aboutTitle: document.getElementById('aboutTitle'),
   template: document.getElementById('artCardTemplate'),
   lightbox: document.getElementById('lightbox'),
   lightboxImage: document.getElementById('lightboxImage'),
@@ -19,7 +22,7 @@ const els = {
   lightboxDescription: document.getElementById('lightboxDescription'),
   closeLightbox: document.getElementById('closeLightbox'),
   artistIntroText: document.getElementById('artistIntroText'),
-  awardsText: document.getElementById('awardsText'),
+  awardsList: document.getElementById('awardsList'),
   contactEmailText: document.getElementById('contactEmailText'),
   contactInstagramText: document.getElementById('contactInstagramText'),
 };
@@ -43,15 +46,39 @@ async function fetchData() {
 
 function renderProfile() {
   const profile = state.profile || {};
+
+  if (profile.hero_title) {
+    els.heroTitle.textContent = profile.hero_title;
+  }
+
+  if (profile.hero_subtitle) {
+    els.heroSubtitle.textContent = profile.hero_subtitle;
+  }
+
+  if (profile.about_title) {
+    els.aboutTitle.textContent = profile.about_title;
+  }
+
   if (profile.artist_intro) {
     els.artistIntroText.textContent = profile.artist_intro;
   }
 
-  if (profile.awards_text) {
-    els.awardsText.textContent = profile.awards_text;
-    els.awardsText.classList.remove('hidden');
+  const awardLines = String(profile.awards_text || '')
+    .split(/?
+/)
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  els.awardsList.innerHTML = '';
+  if (awardLines.length) {
+    awardLines.forEach((line) => {
+      const li = document.createElement('li');
+      li.textContent = line;
+      els.awardsList.appendChild(li);
+    });
+    els.awardsList.classList.remove('hidden');
   } else {
-    els.awardsText.classList.add('hidden');
+    els.awardsList.classList.add('hidden');
   }
 
   if (profile.contact_email) {

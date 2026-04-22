@@ -145,3 +145,45 @@ input:focus, select:focus, textarea:focus { border-color: rgba(141,177,255,0.7);
 .login-layout { display: grid; place-items: center; min-height: calc(100vh - 120px); padding: 40px 0 72px; }
 .login-panel { width: min(560px, 100%); padding: 28px; }
 .login-form { display: grid; gap: 16px; }
+
+
+.awards-list {
+  margin: 1rem 0 0;
+  padding-left: 1.25rem;
+  color: var(--text);
+  line-height: 1.7;
+}
+
+.awards-list li + li {
+  margin-top: 0.45rem;
+}
+
+@media (max-width: 720px) {
+  .hero {
+    gap: 18px;
+  }
+
+  .compact-stats {
+    grid-column: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .compact-stats .stat {
+    border-bottom: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: rgba(255,255,255,0.03);
+  }
+
+  .compact-stats .stat-label {
+    margin-bottom: 4px;
+    font-size: 0.76rem;
+  }
+
+  .compact-stats .stat strong {
+    font-size: 1.2rem;
+  }
+}
