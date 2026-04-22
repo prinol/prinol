@@ -1,18 +1,14 @@
-import { badRequest, json, requireAdmin } from '../_utils';
+import { json, badRequest, ensureSchema } from '../_utils.js';
 
-export async function onRequestPost(context) {
-  const { request, env } = context;
-  const auth = requireAdmin(request, env);
-  if (!auth.ok) return json({ error: '관리자 인증이 필요합니다.' }, { status: 401 });
-
+export async function onRequestPost({ request, env }) {
+  await ensureSchema(env);
   const body = await request.json().catch(() => null);
-  if (!body?.id) return badRequest('id가 필요합니다.');
+  if (!body || !body.id) return badRequest('작품 ID가 필요합니다.');
 
-  const item = await env.DB.prepare(`SELECT image_key FROM artworks WHERE id = ?1`).bind(body.id).first();
-  if (!item) return json({ error: '작품을 찾을 수 없습니다.' }, { status: 404 });
+  const existing = await env.DB.prepare('SELECT * FROM artworks WHERE id = ?').bind(body.id).first();
+  if (!existing) return json({ error: '작품을 찾을 수 없습니다.' }, { status: 404 });
 
-  await env.ART_BUCKET.delete(item.image_key);
-  await env.DB.prepare(`DELETE FROM artworks WHERE id = ?1`).bind(body.id).run();
-
+  await env.ART_BUCKET.delete(existing.image_key);
+  await env.DB.prepare('DELETE FROM artworks WHERE id = ?').bind(body.id).run();
   return json({ ok: true });
 }

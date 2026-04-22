@@ -1,24 +1,33 @@
-import { badRequest, json, requireAdmin } from '../_utils';
+import { json, badRequest, ensureSchema } from '../_utils.js';
 
-export async function onRequestPost(context) {
-  const { request, env } = context;
-  const auth = requireAdmin(request, env);
-  if (!auth.ok) return json({ error: '관리자 인증이 필요합니다.' }, { status: 401 });
-
+export async function onRequestPost({ request, env }) {
+  await ensureSchema(env);
   const body = await request.json().catch(() => null);
-  if (!body?.id) return badRequest('id가 필요합니다.');
-  if (typeof body.is_public !== 'boolean' && body.is_public !== 0 && body.is_public !== 1) {
-    return badRequest('변경할 is_public 값이 필요합니다.');
-  }
+  if (!body || !body.id) return badRequest('작품 ID가 필요합니다.');
 
-  const now = new Date().toISOString();
+  const existing = await env.DB.prepare('SELECT * FROM artworks WHERE id = ?').bind(body.id).first();
+  if (!existing) return json({ error: '작품을 찾을 수 없습니다.' }, { status: 404 });
+
   await env.DB.prepare(`
-    UPDATE artworks
-    SET is_public = ?1, updated_at = ?2
-    WHERE id = ?3
-  `)
-    .bind(body.is_public ? 1 : 0, now, body.id)
-    .run();
+    UPDATE artworks SET
+      title = ?,
+      description = ?,
+      year = ?,
+      category = ?,
+      tags = ?,
+      is_public = ?,
+      updated_at = ?
+    WHERE id = ?
+  `).bind(
+    String(body.title || ''),
+    String(body.description || ''),
+    String(body.year || ''),
+    String(body.category || ''),
+    String(body.tags || ''),
+    Number(body.is_public) === 1 ? 1 : 0,
+    new Date().toISOString(),
+    body.id
+  ).run();
 
   return json({ ok: true });
 }

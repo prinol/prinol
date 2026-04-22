@@ -1,52 +1,29 @@
-function json(data, init = {}) {
-  const headers = new Headers(init.headers || {});
-  headers.set('content-type', 'application/json; charset=utf-8');
-  return new Response(JSON.stringify(data), { ...init, headers });
-}
+import { json, badRequest, createSessionCookie, clearSessionCookie } from '../_utils.js';
 
-function parseCookies(request) {
-  const raw = request.headers.get('cookie') || '';
-  const cookies = {};
-  for (const part of raw.split(';')) {
-    const [k, ...rest] = part.trim().split('=');
-    if (!k) continue;
-    cookies[k] = decodeURIComponent(rest.join('='));
+export async function onRequestPost({ request, env }) {
+  if (!env.ADMIN_KEY) {
+    return json({ error: 'ADMIN_KEY is not configured.' }, { status: 500 });
   }
-  return cookies;
-}
 
-export async function onRequestPost(context) {
-  const { request, env } = context;
   const body = await request.json().catch(() => null);
-  const password = body?.password || '';
-  const valid = env.ADMIN_KEY || '';
-
-  if (!valid || password !== valid) {
-    return json({ ok: false, error: 'Invalid password' }, { status: 401 });
+  if (!body || typeof body.password !== 'string') {
+    return badRequest('암호를 입력하세요.');
+  }
+  if (body.password !== env.ADMIN_KEY) {
+    return json({ error: '암호가 올바르지 않습니다.' }, { status: 401 });
   }
 
-  return json(
-    { ok: true },
-    {
-      headers: {
-        'Set-Cookie': 'admin_auth=1; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=43200',
-      },
+  return json({ ok: true }, {
+    headers: {
+      'Set-Cookie': createSessionCookie(env.ADMIN_KEY)
     }
-  );
+  });
 }
 
 export async function onRequestDelete() {
-  return json(
-    { ok: true },
-    {
-      headers: {
-        'Set-Cookie': 'admin_auth=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0',
-      },
+  return json({ ok: true }, {
+    headers: {
+      'Set-Cookie': clearSessionCookie()
     }
-  );
-}
-
-export async function onRequestGet(context) {
-  const cookies = parseCookies(context.request);
-  return json({ ok: cookies.admin_auth === '1' });
+  });
 }
