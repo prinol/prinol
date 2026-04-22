@@ -64,35 +64,29 @@ async function compressImageToLimit(file, limitBytes = MAX_UPLOAD_BYTES) {
 
   const img = await loadImage(file);
 
-  let width = img.naturalWidth;
-  let height = img.naturalHeight;
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d', { alpha: false });
 
-  let mimeType = 'image/jpeg';
-  let quality = 0.9;
   let blob = null;
+  const sourceRatio = img.naturalHeight / img.naturalWidth;
 
-  for (let scaleStep = 0; scaleStep < 6; scaleStep++) {
-    const scale = scaleStep === 0 ? 1 : Math.pow(0.9, scaleStep);
-    const targetW = Math.max(320, Math.round(width * scale));
-    const targetH = Math.max(320, Math.round(height * scale * (height / width ? 1 : 1)));
+  for (let scaleStep = 0; scaleStep < 7; scaleStep++) {
+    const scale = scaleStep === 0 ? 1 : Math.pow(0.88, scaleStep);
+    const targetW = Math.max(480, Math.round(img.naturalWidth * scale));
+    const targetH = Math.max(480, Math.round(targetW * sourceRatio));
 
     canvas.width = targetW;
-    canvas.height = Math.round((img.naturalHeight / img.naturalWidth) * targetW);
+    canvas.height = targetH;
 
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    quality = 0.9;
-    for (let i = 0; i < 8; i++) {
-      blob = await canvasToBlob(canvas, mimeType, quality);
+    for (const quality of [0.9, 0.82, 0.74, 0.66, 0.58, 0.5, 0.42, 0.34]) {
+      blob = await canvasToBlob(canvas, 'image/jpeg', quality);
       if (blob.size <= limitBytes) {
-        return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: mimeType });
+        return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
       }
-      quality -= 0.1;
-      if (quality < 0.2) break;
     }
   }
 
@@ -100,7 +94,7 @@ async function compressImageToLimit(file, limitBytes = MAX_UPLOAD_BYTES) {
     throw new Error('이미지 압축에 실패했습니다.');
   }
 
-  return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: mimeType });
+  return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
 }
 
 async function prepareSelectedFile() {
@@ -147,11 +141,19 @@ async function uploadArtwork() {
   formData.append('is_public', newEls.isPublic.checked ? '1' : '0');
 
   try {
-    const res = await fetch('/api/upload', { method: 'POST', body: formData, headers: { accept: 'application/json' } });
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+      headers: { accept: 'application/json' }
+    });
+
     const text = await res.text();
     let data = {};
     try { data = text ? JSON.parse(text) : {}; } catch {}
-    if (!res.ok) throw new Error(data?.error || data?.message || `요청 실패 (${res.status})`);
+
+    if (!res.ok) {
+      throw new Error(data?.error || data?.message || `요청 실패 (${res.status})`);
+    }
 
     newStatus('작품을 등록했습니다.');
     newEls.imageFile.value = '';
