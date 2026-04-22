@@ -6,6 +6,8 @@ const manageState = {
 
 const manageEls = {
   search: document.getElementById('manageSearch'),
+  sortFilter: document.getElementById('sortFilter'),
+  publicOnlyFilter: document.getElementById('publicOnlyFilter'),
   count: document.getElementById('manageCount'),
   list: document.getElementById('artList'),
   template: document.getElementById('artListItemTemplate'),
@@ -47,23 +49,54 @@ function normalizeItems(raw) {
   return Array.isArray(items) ? items : [];
 }
 
+function getTimestamp(item) {
+  const date = new Date(item.updated_at || item.created_at || 0).getTime();
+  if (!Number.isNaN(date) && date > 0) return date;
+  const num = Number(item.id) || 0;
+  return num;
+}
+
+function getYearValue(item) {
+  const year = Number(String(item.year || '').trim());
+  return Number.isNaN(year) ? -999999 : year;
+}
+
 function sortItems(items) {
-  return [...items].sort((a, b) => {
-    const ta = new Date(a.updated_at || a.created_at || 0).getTime() || Number(a.id) || 0;
-    const tb = new Date(b.updated_at || b.created_at || 0).getTime() || Number(b.id) || 0;
-    return tb - ta;
-  });
+  const sortValue = manageEls.sortFilter?.value || 'latest';
+  const cloned = [...items];
+
+  if (sortValue === 'year_desc') {
+    return cloned.sort((a, b) => {
+      const y = getYearValue(b) - getYearValue(a);
+      return y !== 0 ? y : getTimestamp(b) - getTimestamp(a);
+    });
+  }
+
+  if (sortValue === 'year_asc') {
+    return cloned.sort((a, b) => {
+      const y = getYearValue(a) - getYearValue(b);
+      return y !== 0 ? y : getTimestamp(b) - getTimestamp(a);
+    });
+  }
+
+  return cloned.sort((a, b) => getTimestamp(b) - getTimestamp(a));
 }
 
 function applySearch() {
   const q = (manageEls.search.value || '').trim().toLowerCase();
-  manageState.filtered = manageState.artworks.filter(item => {
-    if (!q) return true;
-    return [item.title, item.category, item.tags, item.description, item.year]
+  const publicOnly = !!manageEls.publicOnlyFilter?.checked;
+
+  let items = manageState.artworks.filter(item => {
+    const matchesText = !q || [item.title, item.category, item.tags, item.description, item.year]
       .join(' ')
       .toLowerCase()
       .includes(q);
+
+    const matchesPublic = !publicOnly || !!item.is_public;
+    return matchesText && matchesPublic;
   });
+
+  manageState.filtered = sortItems(items);
   renderList();
 }
 
@@ -151,6 +184,7 @@ function renderList() {
           manageState.selected.is_public = item.is_public;
           manageEls.editPublic.checked = !!item.is_public;
         }
+        applySearch();
         manageStatus('공개 여부를 수정했습니다.');
       } catch (err) {
         publicToggle.checked = !publicToggle.checked;
@@ -188,7 +222,7 @@ async function loadArtworks() {
   manageStatus('작품 목록을 불러오는 중...');
   try {
     const raw = await manageFetchJson('/api/artworks');
-    manageState.artworks = sortItems(normalizeItems(raw));
+    manageState.artworks = normalizeItems(raw);
     manageStatus('작품 목록을 불러왔습니다.');
     applySearch();
   } catch (err) {
@@ -217,7 +251,7 @@ async function saveSelectedArtwork() {
       body: JSON.stringify(payload)
     });
 
-    Object.assign(manageState.selected, payload);
+    manageState.selected = { ...manageState.selected, ...payload };
     manageState.artworks = manageState.artworks.map(item =>
       String(item.id) === String(payload.id) ? { ...item, ...payload } : item
     );
@@ -230,6 +264,8 @@ async function saveSelectedArtwork() {
 }
 
 manageEls.search?.addEventListener('input', applySearch);
+manageEls.sortFilter?.addEventListener('change', applySearch);
+manageEls.publicOnlyFilter?.addEventListener('change', applySearch);
 manageEls.saveButton?.addEventListener('click', saveSelectedArtwork);
 manageEls.resetButton?.addEventListener('click', () => {
   setSelected(null);
