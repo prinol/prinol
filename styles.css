@@ -1,3 +1,11 @@
+/*
+  PRINOL public styles
+  IMPORTANT RULE:
+  - Detail page keyword chips (.detail-tags .tag-chip + .color-1 ~ .color-6)
+    MUST remain colorful in future updates.
+  - Do not replace them with monochrome or plain text.
+*/
+
 :root{
   --bg:#0c1016;
   --bg-elev:#121923;
@@ -420,12 +428,101 @@ main{
   word-break:break-all;
 }
 
+/* Detail page */
+.detail-section{
+  padding:16px 0 24px;
+}
+
+.back-link{
+  display:inline-block;
+  margin-bottom:18px;
+  color:var(--text-soft);
+}
+
+.detail-layout{
+  display:grid;
+  grid-template-columns:minmax(0, 1.1fr) minmax(320px, .9fr);
+  gap:24px;
+}
+
+.detail-image-panel,
+.detail-info-panel{
+  border-radius:24px;
+  padding:24px;
+  background:var(--bg-card);
+  border:1px solid var(--line);
+}
+
+.detail-image{
+  width:100%;
+  max-height:78vh;
+  object-fit:contain;
+  border-radius:16px;
+  background:#111;
+}
+
+:root[data-theme="light"] .detail-image{
+  background:#f3f4f6;
+}
+
+.detail-info-panel h1{
+  margin:0;
+  font-size:clamp(1.8rem, 3vw, 3rem);
+  line-height:1.08;
+  color:var(--text);
+}
+
+.detail-meta{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:12px;
+  color:var(--text-muted);
+}
+
+.detail-description{
+  margin:20px 0 0;
+  color:var(--text-soft);
+  line-height:1.8;
+  white-space:pre-line;
+}
+
+.detail-tags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:20px;
+}
+
+/* 
+  DO NOT CHANGE TO MONOCHROME.
+  These colorful chips are intentionally fixed for the artwork detail page.
+*/
+.tag-chip{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:8px 12px;
+  border-radius:999px;
+  font-size:.84rem;
+  font-weight:700;
+  line-height:1;
+}
+
+.color-1{ background:#fee2e2; color:#991b1b; }
+.color-2{ background:#ffedd5; color:#9a3412; }
+.color-3{ background:#fef3c7; color:#92400e; }
+.color-4{ background:#dcfce7; color:#166534; }
+.color-5{ background:#dbeafe; color:#1d4ed8; }
+.color-6{ background:#ede9fe; color:#6d28d9; }
+
 @media (max-width: 980px){
   .works-grid{
     grid-template-columns:repeat(3, minmax(0, 1fr));
   }
 
-  .about-layout{
+  .about-layout,
+  .detail-layout{
     grid-template-columns:1fr;
   }
 }
@@ -491,7 +588,9 @@ main{
   }
 
   .about-copy,
-  .info-card{
+  .info-card,
+  .detail-image-panel,
+  .detail-info-panel{
     padding:18px;
   }
 }
