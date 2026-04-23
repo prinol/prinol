@@ -798,3 +798,84 @@ main{
     grid-template-columns:1fr;
   }
 }
+/* refined search + compact filter balance */
+
+.works-search-wrap{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  width:min(420px, 100%);
+}
+
+.search-reset-button{
+  flex:0 0 auto;
+  height:36px;
+  padding:0 12px;
+  border:1px solid var(--line-strong);
+  border-radius:10px;
+  background:var(--bg-elev);
+  color:var(--text-soft);
+  font-size:.78rem;
+  font-weight:700;
+  letter-spacing:.01em;
+  cursor:pointer;
+  transition:transform .15s ease, border-color .15s ease, background .15s ease;
+}
+
+.search-reset-button:hover{
+  transform:translateY(-1px);
+  border-color:var(--accent);
+}
+
+.filter-inline-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  padding:14px 16px;
+  border-radius:16px;
+  background:var(--bg-card);
+  border:1px solid var(--line);
+}
+
+.filter-select-compact{
+  min-width:140px;
+  height:38px;
+  padding:8px 12px;
+  font-size:.82rem;
+  line-height:1.2;
+}
+
+.checkbox-group-inline{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.checkbox-group-inline .checkbox-chip{
+  padding:7px 10px;
+  font-size:.78rem;
+  line-height:1.1;
+  border-radius:999px;
+}
+
+.checkbox-group-inline .checkbox-chip input{
+  width:14px;
+  height:14px;
+}
+
+@media (max-width: 720px){
+  .works-search-wrap{
+    width:100%;
+  }
+
+  .filter-inline-row{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .filter-select-compact{
+    min-width:160px;
+  }
+}
