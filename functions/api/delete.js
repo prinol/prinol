@@ -1,14 +1,46 @@
 import { json, badRequest, ensureSchema } from '../_utils.js';
 
-export async function onRequestPost({ request, env }) {
-  await ensureSchema(env);
-  const body = await request.json().catch(() => null);
-  if (!body || !body.id) return badRequest('작품 ID가 필요합니다.');
+function normalizeText(value) {
+  return String(value ?? '').trim();
+}
 
-  const existing = await env.DB.prepare('SELECT * FROM artworks WHERE id = ?').bind(body.id).first();
-  if (!existing) return json({ error: '작품을 찾을 수 없습니다.' }, { status: 404 });
+async function findArtwork(DB, id) {
+  return DB.prepare('SELECT * FROM artworks WHERE id = ? LIMIT 1').bind(id).first();
+}
 
-  await env.ART_BUCKET.delete(existing.image_key);
-  await env.DB.prepare('DELETE FROM artworks WHERE id = ?').bind(body.id).run();
-  return json({ ok: true });
+export async function onRequestPost(context) {
+  try {
+    const { env } = context;
+    await ensureSchema(env.DB);
+
+    let body = {};
+    try {
+      body = await context.request.json();
+    } catch {
+      return badRequest('JSON 본문을 읽을 수 없습니다.');
+    }
+
+    const id = normalizeText(body.id);
+    if (!id) return badRequest('작품 ID가 필요합니다.');
+
+    const existing = await findArtwork(env.DB, id);
+    if (!existing) {
+      return json({ ok: true, deleted: false, message: '이미 삭제되었거나 존재하지 않습니다.' });
+    }
+
+    await env.DB.prepare('DELETE FROM artworks WHERE id = ?').bind(id).run();
+
+    const imageKey = normalizeText(body.image_key) || existing.image_key || '';
+    if (env.ART_BUCKET && imageKey) {
+      try {
+        await env.ART_BUCKET.delete(imageKey);
+      } catch (err) {
+        console.warn('image delete failed', err);
+      }
+    }
+
+    return json({ ok: true, deleted: true, id });
+  } catch (err) {
+    return json({ error: err?.message || '작품 삭제에 실패했습니다.' }, { status: 500 });
+  }
 }
