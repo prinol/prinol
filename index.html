@@ -54,22 +54,16 @@
           <h2>Works</h2>
           <div class="works-search-wrap">
             <input id="keywordSearch" class="works-search" type="search" placeholder="키워드 검색">
-            <button id="resetSearchButton" class="ghost-button search-reset-button" type="button">초기화</button>
+            <button id="resetSearchButton" class="search-reset-button" type="button" aria-label="검색 초기화">초기화</button>
           </div>
         </div>
 
-        <div class="filter-stack">
-          <div class="filter-row">
-            <label class="filter-label" for="yearFilter">연도</label>
-            <select id="yearFilter" class="filter-select">
-              <option value="">전체 연도</option>
-            </select>
-          </div>
+        <div class="filter-inline-row">
+          <select id="yearFilter" class="filter-select filter-select-compact" aria-label="연도 선택">
+            <option value="">전체 연도</option>
+          </select>
 
-          <div class="filter-row categories-row">
-            <span class="filter-label">카테고리</span>
-            <div id="categoryFilters" class="checkbox-group"></div>
-          </div>
+          <div id="categoryFilters" class="checkbox-group checkbox-group-inline"></div>
         </div>
       </div>
 
