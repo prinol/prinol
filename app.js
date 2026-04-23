@@ -26,6 +26,7 @@ const appEls = {
   worksLoading: document.getElementById('worksLoading'),
   sentinel: document.getElementById('scrollSentinel'),
   keywordSearch: document.getElementById('keywordSearch'),
+  resetSearchButton: document.getElementById('resetSearchButton'),
   yearFilter: document.getElementById('yearFilter'),
   categoryFilters: document.getElementById('categoryFilters'),
   themeToggle: document.getElementById('themeToggle'),
@@ -39,20 +40,13 @@ async function fetchJson(url, options = {}) {
   });
   const text = await res.text();
   let data = {};
-  try {
-    data = text ? JSON.parse(text) : {};
-  } catch {}
-  if (!res.ok) {
-    throw new Error(data?.error || data?.message || `요청 실패 (${res.status})`);
-  }
+  try { data = text ? JSON.parse(text) : {}; } catch {}
+  if (!res.ok) throw new Error(data?.error || data?.message || `요청 실패 (${res.status})`);
   return data;
 }
 
 function textLinesToList(text) {
-  return String(text || '')
-    .split(/\r?\n/)
-    .map((v) => v.trim())
-    .filter(Boolean);
+  return String(text || '').split(/\r?\n/).map(v => v.trim()).filter(Boolean);
 }
 
 function fillProfile(profile = {}) {
@@ -64,7 +58,7 @@ function fillProfile(profile = {}) {
   if (appEls.awardsList) {
     const awards = textLinesToList(profile.awards_text || profile.awards || '');
     appEls.awardsList.innerHTML = '';
-    awards.forEach((award) => {
+    awards.forEach(award => {
       const li = document.createElement('li');
       li.textContent = award;
       appEls.awardsList.appendChild(li);
@@ -131,11 +125,9 @@ function makeCard(item) {
 function renderVisibleItems() {
   if (!appEls.worksGrid) return;
   appEls.worksGrid.innerHTML = '';
-  appState.visibleItems.forEach((item) => {
-    appEls.worksGrid.appendChild(makeCard(item));
-  });
+  appState.visibleItems.forEach(item => appEls.worksGrid.appendChild(makeCard(item)));
 
-  const categories = new Set(appState.filteredItems.map((item) => item.category).filter(Boolean));
+  const categories = new Set(appState.filteredItems.map(item => item.category).filter(Boolean));
   if (appEls.publicCount) appEls.publicCount.textContent = String(appState.filteredItems.length);
   if (appEls.categoryCount) appEls.categoryCount.textContent = String(categories.size);
   if (appEls.worksEmpty) appEls.worksEmpty.hidden = appState.visibleItems.length > 0;
@@ -171,12 +163,20 @@ function uploadedTime(item) {
 }
 
 function orderItemsForRefresh(items) {
-  const pinned = items
-    .filter((item) => Number(item.is_pinned || 0) === 1)
+  const pinned = items.filter(item => Number(item.is_pinned || 0) === 1)
     .sort((a, b) => uploadedTime(b) - uploadedTime(a));
-
-  const unpinned = shuffleArray(items.filter((item) => Number(item.is_pinned || 0) !== 1));
+  const unpinned = shuffleArray(items.filter(item => Number(item.is_pinned || 0) !== 1));
   return [...pinned, ...unpinned];
+}
+
+function syncUrlKeyword() {
+  const url = new URL(window.location.href);
+  if (appState.keyword.trim()) {
+    url.searchParams.set('q', appState.keyword.trim());
+  } else {
+    url.searchParams.delete('q');
+  }
+  history.replaceState({}, '', url.toString());
 }
 
 function applyFilters(reset = true) {
@@ -184,17 +184,15 @@ function applyFilters(reset = true) {
   const selectedYear = appState.selectedYear;
   const selectedCategories = appState.selectedCategories;
 
-  appState.filteredItems = appState.allItems.filter((item) => {
-    const haystack = [item.title, item.description, item.tags, item.category, item.year]
-      .join(' ')
-      .toLowerCase();
-
+  appState.filteredItems = appState.allItems.filter(item => {
+    const haystack = [item.title, item.description, item.tags, item.category, item.year].join(' ').toLowerCase();
     const yearOk = !selectedYear || String(item.year || '') === selectedYear;
     const categoryOk = selectedCategories.size === 0 || selectedCategories.has(String(item.category || ''));
     const keywordOk = !keyword || haystack.includes(keyword);
-
     return yearOk && categoryOk && keywordOk;
   });
+
+  syncUrlKeyword();
 
   if (reset) {
     appState.offset = 0;
@@ -208,11 +206,11 @@ function applyFilters(reset = true) {
 
 function buildYearOptions() {
   if (!appEls.yearFilter) return;
-  const years = [...new Set(appState.allItems.map((item) => String(item.year || '')).filter(Boolean))]
+  const years = [...new Set(appState.allItems.map(item => String(item.year || '')).filter(Boolean))]
     .sort((a, b) => Number(b) - Number(a));
 
   appEls.yearFilter.innerHTML = '<option value="">전체 연도</option>';
-  years.forEach((year) => {
+  years.forEach(year => {
     const option = document.createElement('option');
     option.value = year;
     option.textContent = year;
@@ -222,11 +220,11 @@ function buildYearOptions() {
 
 function buildCategoryFilters() {
   if (!appEls.categoryFilters) return;
-  const categories = [...new Set(appState.allItems.map((item) => String(item.category || '')).filter(Boolean))]
+  const categories = [...new Set(appState.allItems.map(item => String(item.category || '')).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, 'ko'));
 
   appEls.categoryFilters.innerHTML = '';
-  categories.forEach((category) => {
+  categories.forEach(category => {
     const label = document.createElement('label');
     label.className = 'checkbox-chip';
 
@@ -234,11 +232,8 @@ function buildCategoryFilters() {
     input.type = 'checkbox';
     input.value = category;
     input.addEventListener('change', () => {
-      if (input.checked) {
-        appState.selectedCategories.add(category);
-      } else {
-        appState.selectedCategories.delete(category);
-      }
+      if (input.checked) appState.selectedCategories.add(category);
+      else appState.selectedCategories.delete(category);
       applyFilters(true);
     });
 
@@ -274,10 +269,8 @@ async function loadAllWorks() {
 function initInfiniteScroll() {
   if (!appEls.sentinel) return;
   appState.observer = new IntersectionObserver((entries) => {
-    if (entries.some((entry) => entry.isIntersecting)) {
-      if (appState.hasMoreFiltered) {
-        appendMoreVisibleItems();
-      }
+    if (entries.some(entry => entry.isIntersecting)) {
+      if (appState.hasMoreFiltered) appendMoreVisibleItems();
     }
   }, { rootMargin: '400px 0px' });
   appState.observer.observe(appEls.sentinel);
@@ -301,9 +294,7 @@ function applyTheme(theme, persist = true) {
     appEls.themeToggleLabel.textContent = theme === 'light' ? 'Light' : 'Dark';
   }
 
-  if (persist) {
-    localStorage.setItem('prinol-theme', theme);
-  }
+  if (persist) localStorage.setItem('prinol-theme', theme);
 }
 
 function bindTheme() {
@@ -318,15 +309,24 @@ function bindTheme() {
   const media = window.matchMedia('(prefers-color-scheme: light)');
   media.addEventListener?.('change', (e) => {
     const saved = localStorage.getItem('prinol-theme');
-    if (!saved) {
-      applyTheme(e.matches ? 'light' : 'dark', false);
-    }
+    if (!saved) applyTheme(e.matches ? 'light' : 'dark', false);
   });
 }
 
 function bindEvents() {
+  const params = new URLSearchParams(location.search);
+  const initialQ = params.get('q') || '';
+  appState.keyword = initialQ;
+  if (appEls.keywordSearch) appEls.keywordSearch.value = initialQ;
+
   appEls.keywordSearch?.addEventListener('input', (e) => {
     appState.keyword = e.target.value || '';
+    applyFilters(true);
+  });
+
+  appEls.resetSearchButton?.addEventListener('click', () => {
+    appState.keyword = '';
+    if (appEls.keywordSearch) appEls.keywordSearch.value = '';
     applyFilters(true);
   });
 
