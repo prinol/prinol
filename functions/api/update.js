@@ -1,4 +1,3 @@
-
 import { json, badRequest, ensureSchema, fileExtension, uuid, makeImageUrl } from '../_utils.js';
 
 function normalizeText(value) {
