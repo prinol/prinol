@@ -1,4 +1,3 @@
-
 const MAX_UPLOAD_BYTES = 500 * 1024;
 
 const manageState = {
@@ -6,6 +5,7 @@ const manageState = {
   filtered: [],
   selected: null,
   preparedReplacementFile: null,
+  pending: new Map(), // id -> {is_public?, is_pinned?, delete?}
 };
 
 const manageEls = {
@@ -13,6 +13,7 @@ const manageEls = {
   sortFilter: document.getElementById('sortFilter'),
   publicOnlyFilter: document.getElementById('publicOnlyFilter'),
   count: document.getElementById('manageCount'),
+  pendingCount: document.getElementById('pendingCount'),
   list: document.getElementById('artList'),
   editorTitle: document.getElementById('editorTitle'),
   editorEmpty: document.getElementById('editorEmpty'),
@@ -29,6 +30,8 @@ const manageEls = {
   editPinned: document.getElementById('editPinned'),
   saveButton: document.getElementById('saveArtworkButton'),
   resetButton: document.getElementById('resetEditorButton'),
+  applyPendingButton: document.getElementById('applyPendingButton'),
+  clearPendingButton: document.getElementById('clearPendingButton'),
   status: document.getElementById('editorStatus'),
 };
 
@@ -37,6 +40,37 @@ function manageStatus(message, isError = false) {
   manageEls.status.textContent = message || '';
   manageEls.status.classList.toggle('error', !!isError);
   manageEls.status.classList.toggle('success', !isError && !!message);
+}
+
+function updatePendingSummary() {
+  if (!manageEls.pendingCount) return;
+  const count = manageState.pending.size;
+  manageEls.pendingCount.textContent = count ? `일괄 반영 대기: ${count}개` : '일괄 반영 대기 없음';
+}
+
+function setPending(id, patch) {
+  const current = manageState.pending.get(String(id)) || {};
+  const next = { ...current, ...patch };
+  const artwork = manageState.artworks.find(v => String(v.id) === String(id));
+
+  if (artwork) {
+    if (next.is_public === artwork.is_public) delete next.is_public;
+    if (next.is_pinned === artwork.is_pinned) delete next.is_pinned;
+    if (!next.delete) delete next.delete;
+  }
+
+  if (Object.keys(next).length === 0) {
+    manageState.pending.delete(String(id));
+  } else {
+    manageState.pending.set(String(id), next);
+  }
+  updatePendingSummary();
+}
+
+function getEffectiveValue(item, key) {
+  const pending = manageState.pending.get(String(item.id));
+  if (pending && key in pending) return pending[key];
+  return item[key];
 }
 
 function formatBytes(bytes) {
@@ -97,7 +131,8 @@ function applySearch() {
   let items = manageState.artworks.filter(item => {
     const haystack = [item.title, item.category, item.tags, item.description, item.year].join(' ').toLowerCase();
     const matchesText = !q || haystack.includes(q);
-    const matchesPublic = !publicOnly || !!item.is_public;
+    const effectivePublic = !!getEffectiveValue(item, 'is_public');
+    const matchesPublic = !publicOnly || effectivePublic;
     return matchesText && matchesPublic;
   });
 
@@ -145,6 +180,10 @@ function createListRow(item) {
     row.classList.add('selected');
   }
 
+  const pending = manageState.pending.get(String(item.id));
+  if (pending) row.classList.add('has-pending');
+  if (pending?.delete) row.classList.add('marked-delete');
+
   const main = document.createElement('button');
   main.type = 'button';
   main.className = 'art-row-main';
@@ -163,7 +202,8 @@ function createListRow(item) {
 
   const title = document.createElement('strong');
   title.className = 'art-row-title';
-  title.textContent = item.is_pinned ? `📌 ${item.title || '(제목 없음)'}` : (item.title || '(제목 없음)');
+  const effectivePinned = !!getEffectiveValue(item, 'is_pinned');
+  title.textContent = effectivePinned ? `📌 ${item.title || '(제목 없음)'}` : (item.title || '(제목 없음)');
 
   const meta = document.createElement('div');
   meta.className = 'art-row-meta';
@@ -181,7 +221,7 @@ function createListRow(item) {
   publicToggleWrap.className = 'row-toggle';
   const publicToggle = document.createElement('input');
   publicToggle.type = 'checkbox';
-  publicToggle.checked = !!item.is_public;
+  publicToggle.checked = !!getEffectiveValue(item, 'is_public');
   const publicText = document.createElement('span');
   publicText.textContent = '공개';
   publicToggleWrap.appendChild(publicToggle);
@@ -191,107 +231,48 @@ function createListRow(item) {
   pinnedToggleWrap.className = 'row-toggle';
   const pinnedToggle = document.createElement('input');
   pinnedToggle.type = 'checkbox';
-  pinnedToggle.checked = !!item.is_pinned;
+  pinnedToggle.checked = !!getEffectiveValue(item, 'is_pinned');
   const pinnedText = document.createElement('span');
   pinnedText.textContent = '고정';
   pinnedToggleWrap.appendChild(pinnedToggle);
   pinnedToggleWrap.appendChild(pinnedText);
 
-  const deleteButton = document.createElement('button');
-  deleteButton.type = 'button';
-  deleteButton.className = 'danger-button row-delete-button';
-  deleteButton.textContent = '삭제';
-
-  quick.appendChild(publicToggleWrap);
-  quick.appendChild(pinnedToggleWrap);
-  quick.appendChild(deleteButton);
+  const deleteToggleWrap = document.createElement('label');
+  deleteToggleWrap.className = 'row-toggle row-delete-toggle';
+  const deleteToggle = document.createElement('input');
+  deleteToggle.type = 'checkbox';
+  deleteToggle.checked = !!pending?.delete;
+  const deleteText = document.createElement('span');
+  deleteText.textContent = '삭제대기';
+  deleteToggleWrap.appendChild(deleteToggle);
+  deleteToggleWrap.appendChild(deleteText);
 
   main.addEventListener('click', () => {
     setSelected(item);
     renderList();
   });
 
-  publicToggle.addEventListener('change', async (e) => {
+  publicToggle.addEventListener('change', (e) => {
     e.stopPropagation();
-    try {
-      await manageFetchJson('/api/update', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          id: item.id,
-          title: item.title ?? '',
-          year: item.year ?? '',
-          category: item.category ?? '',
-          tags: item.tags ?? '',
-          description: item.description ?? '',
-          is_public: publicToggle.checked ? 1 : 0,
-          is_pinned: item.is_pinned ? 1 : 0,
-        }),
-      });
-      item.is_public = publicToggle.checked ? 1 : 0;
-      if (manageState.selected && String(manageState.selected.id) === String(item.id)) {
-        manageState.selected.is_public = item.is_public;
-        if (manageEls.editPublic) manageEls.editPublic.checked = !!item.is_public;
-      }
-      manageStatus('공개 여부를 수정했습니다.');
-      applySearch();
-    } catch (err) {
-      publicToggle.checked = !publicToggle.checked;
-      manageStatus(err.message || '공개 여부 수정에 실패했습니다.', true);
-    }
+    setPending(item.id, { is_public: publicToggle.checked ? 1 : 0 });
+    renderList();
   });
 
-  pinnedToggle.addEventListener('change', async (e) => {
+  pinnedToggle.addEventListener('change', (e) => {
     e.stopPropagation();
-    try {
-      await manageFetchJson('/api/update', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          id: item.id,
-          title: item.title ?? '',
-          year: item.year ?? '',
-          category: item.category ?? '',
-          tags: item.tags ?? '',
-          description: item.description ?? '',
-          is_public: item.is_public ? 1 : 0,
-          is_pinned: pinnedToggle.checked ? 1 : 0,
-        }),
-      });
-      item.is_pinned = pinnedToggle.checked ? 1 : 0;
-      if (manageState.selected && String(manageState.selected.id) === String(item.id)) {
-        manageState.selected.is_pinned = item.is_pinned;
-        if (manageEls.editPinned) manageEls.editPinned.checked = !!item.is_pinned;
-      }
-      manageStatus('상단 고정 여부를 수정했습니다.');
-      applySearch();
-    } catch (err) {
-      pinnedToggle.checked = !pinnedToggle.checked;
-      manageStatus(err.message || '상단 고정 수정에 실패했습니다.', true);
-    }
+    setPending(item.id, { is_pinned: pinnedToggle.checked ? 1 : 0 });
+    renderList();
   });
 
-  deleteButton.addEventListener('click', async (e) => {
+  deleteToggle.addEventListener('change', (e) => {
     e.stopPropagation();
-    const ok = confirm(`"${item.title || '이 작품'}"을 삭제할까요?`);
-    if (!ok) return;
-
-    try {
-      await manageFetchJson('/api/delete', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ id: item.id, image_key: item.image_key ?? '' }),
-      });
-      manageState.artworks = manageState.artworks.filter(v => String(v.id) !== String(item.id));
-      if (manageState.selected && String(manageState.selected.id) === String(item.id)) {
-        setSelected(null);
-      }
-      manageStatus('작품을 삭제했습니다.');
-      applySearch();
-    } catch (err) {
-      manageStatus(err.message || '삭제에 실패했습니다.', true);
-    }
+    setPending(item.id, { delete: deleteToggle.checked });
+    renderList();
   });
+
+  quick.appendChild(publicToggleWrap);
+  quick.appendChild(pinnedToggleWrap);
+  quick.appendChild(deleteToggleWrap);
 
   row.appendChild(main);
   row.appendChild(quick);
@@ -415,10 +396,76 @@ async function loadArtworks() {
     const raw = await manageFetchJson('/api/artworks?all=1&limit=200');
     manageState.artworks = Array.isArray(raw?.items) ? raw.items : [];
     manageStatus('작품 목록을 불러왔습니다.');
+    updatePendingSummary();
     applySearch();
   } catch (err) {
     manageStatus(err.message || '작품 목록을 불러오지 못했습니다.', true);
   }
+}
+
+async function applyPendingChanges() {
+  const entries = [...manageState.pending.entries()];
+  if (!entries.length) {
+    manageStatus('반영할 목록 변경사항이 없습니다.');
+    return;
+  }
+
+  manageStatus(`목록 변경사항 ${entries.length}개 반영 중...`);
+  try {
+    for (const [id, patch] of entries) {
+      const item = manageState.artworks.find(v => String(v.id) === String(id));
+      if (!item) continue;
+
+      if (patch.delete) {
+        await manageFetchJson('/api/delete', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ id: item.id, image_key: item.image_key ?? '' }),
+        });
+        manageState.artworks = manageState.artworks.filter(v => String(v.id) !== String(id));
+        if (manageState.selected && String(manageState.selected.id) === String(id)) {
+          setSelected(null);
+        }
+      } else {
+        await manageFetchJson('/api/update', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            id: item.id,
+            title: item.title ?? '',
+            year: item.year ?? '',
+            category: item.category ?? '',
+            tags: item.tags ?? '',
+            description: item.description ?? '',
+            is_public: 'is_public' in patch ? patch.is_public : (item.is_public ? 1 : 0),
+            is_pinned: 'is_pinned' in patch ? patch.is_pinned : (item.is_pinned ? 1 : 0),
+          }),
+        });
+
+        item.is_public = 'is_public' in patch ? patch.is_public : item.is_public;
+        item.is_pinned = 'is_pinned' in patch ? patch.is_pinned : item.is_pinned;
+        if (manageState.selected && String(manageState.selected.id) === String(id)) {
+          manageState.selected = { ...manageState.selected, ...item };
+          if (manageEls.editPublic) manageEls.editPublic.checked = !!item.is_public;
+          if (manageEls.editPinned) manageEls.editPinned.checked = !!item.is_pinned;
+        }
+      }
+    }
+
+    manageState.pending.clear();
+    updatePendingSummary();
+    applySearch();
+    manageStatus('목록 변경사항을 일괄 반영했습니다.');
+  } catch (err) {
+    manageStatus(err.message || '일괄 반영에 실패했습니다.', true);
+  }
+}
+
+function clearPendingChanges() {
+  manageState.pending.clear();
+  updatePendingSummary();
+  applySearch();
+  manageStatus('대기 중인 목록 변경사항을 초기화했습니다.');
 }
 
 async function saveSelectedArtwork() {
@@ -480,6 +527,8 @@ async function saveSelectedArtwork() {
       );
     }
 
+    manageState.pending.delete(String(manageState.selected.id));
+    updatePendingSummary();
     manageStatus('작품 정보를 저장했습니다.');
     applySearch();
     setSelected(manageState.artworks.find((item) => String(item.id) === String(manageState.selected.id)) || null);
@@ -497,5 +546,7 @@ manageEls.resetButton?.addEventListener('click', () => {
   renderList();
 });
 manageEls.editImageFile?.addEventListener('change', prepareReplacementFile);
+manageEls.applyPendingButton?.addEventListener('click', applyPendingChanges);
+manageEls.clearPendingButton?.addEventListener('click', clearPendingChanges);
 
 loadArtworks();
