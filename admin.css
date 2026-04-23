@@ -531,3 +531,19 @@ body{
     grid-column:span 12;
   }
 }
+
+/* bulk apply addon */
+.art-row.has-pending {
+  border-color: #7c5cff;
+  box-shadow: 0 0 0 1px rgba(124,92,255,.22) inset;
+}
+
+.art-row.marked-delete {
+  border-color: #7a2432;
+  background: #1a1115;
+}
+
+.row-delete-toggle span {
+  color: #ffccd5;
+}
+
