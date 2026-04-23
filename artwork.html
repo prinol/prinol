@@ -10,10 +10,12 @@
   <header class="site-header">
     <div class="header-inner">
       <a class="site-logo" href="./">PRINOL</a>
-      <nav class="site-nav">
-        <a href="./#works">Works</a>
-        <a href="./#about">About</a>
-      </nav>
+      <div class="header-right">
+        <nav class="site-nav">
+          <a href="./#works">Works</a>
+          <a href="./#about">About</a>
+        </nav>
+      </div>
     </div>
   </header>
 
@@ -27,14 +29,71 @@
         </div>
 
         <div class="detail-info-panel">
-          <p class="hero-kicker">ARTWORK</p>
-          <h1 id="detailTitle">Untitled</h1>
-          <div class="detail-meta">
-            <span id="detailYear"></span>
-            <span id="detailCategory"></span>
+          <div class="detail-admin-bar hidden" id="detailAdminBar">
+            <button id="editToggleButton" class="theme-toggle detail-edit-button" type="button">수정하기</button>
           </div>
-          <p id="detailDescription" class="detail-description"></p>
-          <div id="detailTags" class="detail-tags"></div>
+
+          <div id="detailViewMode">
+            <p class="hero-kicker">ARTWORK</p>
+            <h1 id="detailTitle">Untitled</h1>
+            <div class="detail-meta">
+              <span id="detailYear"></span>
+              <span id="detailCategory"></span>
+            </div>
+            <p id="detailDescription" class="detail-description"></p>
+            <div id="detailTags" class="detail-tags"></div>
+          </div>
+
+          <form id="detailEditForm" class="detail-edit-form hidden" onsubmit="return false;">
+            <label class="detail-field">
+              <span>이미지 교체</span>
+              <input id="editImageFile" type="file" accept="image/*">
+              <small id="editImageSizeInfo" class="detail-help">새 파일을 선택하지 않으면 기존 이미지를 유지합니다.</small>
+            </label>
+
+            <label class="detail-field">
+              <span>작품명</span>
+              <input id="editTitle" type="text">
+            </label>
+
+            <div class="detail-edit-grid">
+              <label class="detail-field">
+                <span>연도</span>
+                <input id="editYear" type="text">
+              </label>
+              <label class="detail-field">
+                <span>카테고리</span>
+                <input id="editCategory" type="text">
+              </label>
+            </div>
+
+            <label class="detail-field">
+              <span>키워드</span>
+              <input id="editTags" type="text">
+            </label>
+
+            <label class="detail-field">
+              <span>설명</span>
+              <textarea id="editDescription" rows="8"></textarea>
+            </label>
+
+            <label class="detail-check">
+              <input id="editPublic" type="checkbox">
+              <span>공개 작품으로 표시</span>
+            </label>
+
+            <label class="detail-check">
+              <input id="editPinned" type="checkbox">
+              <span>상단 고정</span>
+            </label>
+
+            <div class="detail-edit-actions">
+              <button id="detailSaveButton" class="ghost-button" type="button">저장</button>
+              <button id="detailCancelButton" class="ghost-button" type="button">취소</button>
+            </div>
+
+            <div id="detailEditStatus" class="status-line"></div>
+          </form>
         </div>
       </div>
 
