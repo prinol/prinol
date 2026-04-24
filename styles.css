@@ -879,3 +879,101 @@ main{
     min-width:160px;
   }
 }
+/* search reset button + unified theme addon for detail/admin pages */
+.search-reset-button {
+  height: 44px;
+  flex: 0 0 auto;
+}
+
+.detail-admin-bar {
+  display:flex;
+  justify-content:flex-end;
+  margin-bottom:14px;
+}
+
+.detail-edit-button {
+  border:1px solid var(--line-strong);
+  background:var(--bg-elev);
+  color:var(--text);
+}
+
+.detail-edit-form {
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.detail-edit-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.detail-field {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.detail-field span {
+  color:var(--text-muted);
+  font-size:.9rem;
+  font-weight:600;
+}
+
+.detail-field input,
+.detail-field textarea {
+  width:100%;
+  border:1px solid var(--line-strong);
+  border-radius:12px;
+  background:var(--input-bg);
+  color:var(--text);
+  padding:12px 14px;
+  font-size:.95rem;
+}
+
+.detail-field textarea {
+  resize:vertical;
+  min-height:140px;
+}
+
+.detail-field input:focus,
+.detail-field textarea:focus {
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:var(--shadow-focus);
+}
+
+.detail-check {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  color:var(--text);
+}
+
+.detail-help {
+  color:var(--text-muted);
+  font-size:.84rem;
+}
+
+.detail-edit-actions {
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.detail-tag-link {
+  cursor:pointer;
+}
+
+/* admin pages use same global theme tokens when addon css is appended to admin.css */
+:root[data-theme="light"] body,
+:root[data-theme="light"] .admin-shell body {
+  color: var(--text);
+}
+
+@media (max-width: 720px) {
+  .detail-edit-grid {
+    grid-template-columns:1fr;
+  }
+}
